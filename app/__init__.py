@@ -1,4 +1,4 @@
-from flask import Flask, render_template, session
+from flask import Flask
 from app.main import main
 from app.config import AppConfig
 
