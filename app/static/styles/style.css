@@ -1,0 +1,115 @@
+body {
+  background-image: url('../img/background-main.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-position: center;
+  position: relative;
+  height: 100vh;
+}
+* {
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  font-size: 48px;
+}
+
+h2 {
+  font-family: 'inter';
+  font-size: 36px;
+  color: black;
+}
+
+a {
+  text-decoration: none;
+  color: unset;
+  transition: .3s;
+  position: relative;
+}
+
+ul {
+  list-style: none;
+}
+
+button {
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.input-con,
+.form-con,
+.text-con,
+.image-con,
+.button-con {
+  position: relative;
+}
+
+#main {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+#index {
+  background: #D9D9D9;
+  padding: 30px 95px;
+  text-align: center;
+}
+
+#index h2 {
+  margin: 30px 0 40px;
+}
+
+#index form .input-con{
+  width: 550px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px 0;
+}
+
+
+#index form input {
+  width: 100%;
+  padding: 30px 0 30px 20px;
+  box-sizing: border-box;
+}
+
+#index form input::placeholder {
+  color: black; 
+  font-size: 24px;
+}
+
+#index form .button-con {
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px 0;
+}
+
+#index form .button-con button {
+  width: 100%;
+  padding: 25px 0;
+  background: #DD3490;
+  font-size: 32px;
+  font-weight: 600;
+  color: white;
+}
+
+#index form .button-con a {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+/* 
+==================================================
+DASHBOARD 
+==================================================
+*/
+
+
+#dashboard {
+
+}
