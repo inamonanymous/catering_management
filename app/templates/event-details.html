@@ -1,0 +1,52 @@
+{% extends 'layout.html' %} {% block body %}
+<div class="main-content">
+  {% include 'partials/header.html'%}
+  <div id="event-details">
+    <div class="event-details-container">
+      <h1>Event Details</h1>
+      <form action="">
+        <div class="left-container">
+          <div class="field-container">
+            <label>Name of Event</label>
+            <div class="input-container">
+              <input type="text" required />
+            </div>
+          </div>
+          <div class="field-container">
+            <label>Events Place</label>
+            <div class="input-container"><input type="text" required /></div>
+          </div>
+          <div class="field-container">
+            <label>Event Address</label>
+            <div class="input-container"><input type="text" required /></div>
+          </div>
+          <div class="field-container">
+            <label>Reservation Date</label>
+            <div class="input-container">
+              <input type="date" name="date" required />
+            </div>
+          </div>
+          <div class="field-container">
+            <label>Reservation Time</label>
+            <div class="input-container">
+              <input type="time" name="time" required />
+            </div>
+          </div>
+        </div>
+        <div class="right-container">
+          <div class="field-container">
+            <label>Time food Delivered</label>
+            <div class="input-container"><input type="text" required /></div>
+          </div>
+          <div class="field-container">
+            <label>Secondary Phone No.</label>
+            <div class="input-container"><input type="text" required /></div>
+          </div>
+        </div>
+        <button class="alt-1">Complete</button>
+      </form>
+    </div>
+  </div>
+  {% include 'partials/footer.html'%}
+</div>
+{% endblock %}

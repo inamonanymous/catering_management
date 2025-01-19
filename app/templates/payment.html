@@ -1,0 +1,21 @@
+{% extends 'layout.html' %} {% block body %}
+<div class="main-content">
+  {% include 'partials/header.html'%}
+  <div id="payment">
+    <div class="page-title">
+        <h2>Payment Area</h2>
+    </div>
+    <div class="payment-container">
+        <div class="payment-widget">
+            <p>G - Cash</p>
+            <button class="alt-1">Select</button>
+        </div>
+        <div class="payment-widget">
+            <p>Maya</p>
+            <button class="alt-1">Select</button>
+        </div>
+    </div>
+  </div>
+  {% include 'partials/footer.html'%}
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends 'layout.html' %} {% block body %}
+<div class="main-content">
+  {% include 'partials/header.html'%}
+  <div id="qrcode">
+    <div class="main-qrcode-container">
+      <div class="qrcode-container">
+        <div class="qrcode-widget">
+          <p>G - Cash</p>
+        </div>
+        <div class="qrcode-widget">
+          <p>QR Code</p>
+        </div>
+      </div>
+      <button class="alt-1">Reference No.</button>
+    </div>
+  </div>
+  {% include 'partials/footer.html'%}
+</div>
+{% endblock %}

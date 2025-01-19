@@ -1,0 +1,23 @@
+{% extends 'layout.html' %} {% block body %}
+<div class="main-content">
+  {% include 'partials/header.html'%}
+  <div id="booking">
+    <div class="page-title">
+        <h2>Booking Area</h2>
+    </div>
+    <div class="booking-container">
+        <div class="booking-widget">
+            <p>All in <br>
+                Package </p>
+            <button class="alt-1">Select</button>
+        </div>
+        <div class="booking-widget">
+            <p>Manual <br>
+                Package </p>
+            <button class="alt-1">Select</button>
+        </div>
+    </div>
+  </div>
+  {% include 'partials/footer.html'%}
+</div>
+{% endblock %}
