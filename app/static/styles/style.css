@@ -235,6 +235,12 @@ PAYMENT
   background-color: #ca1d70;
   border-radius: 10px;
 }
+#payment .payment-container .payment-widget:first-of-type {
+  background: blue;
+}
+#payment .payment-container .payment-widget:last-of-type {
+  background: green;
+}
 #payment .payment-container .payment-widget p {
   font-size: 36px;
   margin-bottom: 33px;
@@ -409,12 +415,15 @@ QR CODE
 #qrcode .qrcode-container .qrcode-widget:first-of-type {
   background-color: #395ef2;
 }
+#qrcode .qrcode-container .qrcode-widget:last-of-type {
+  background-color: green;
+}
 #qrcode .qrcode-container .qrcode-widget p {
   font-size: 36px;
   margin-bottom: 33px;
   color: #ffffff;
 }
-#qrcode .main-qrcode-container button {
+#qrcode .main-qrcode-container input {
   background-color: #ffffff;
   border: 1px solid #000000;
   font-size: 24px;
@@ -422,6 +431,16 @@ QR CODE
   margin: 0 auto;
   border-radius: 10px;
   padding: 5px 17px;
+}
+
+#qrcode .main-qrcode-container button {
+  background-color: green;
+  margin: 10px auto 0;
+  font-size: 24px;
+  display: block;
+  border-radius: 10px;
+  padding: 5px 10px;
+  color: white;
 }
 #qrcode .main-qrcode-container {
   display: flex;
