@@ -1,0 +1,60 @@
+from app.models import db
+class Packages(db.Model):
+    package_id = db.Column(db.Integer, primary_key=True)
+    package_name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    price = db.Column(db.Numeric(10, 2), nullable=False)
+    created_at = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp())
+
+    bookings = db.relationship('Bookings', backref='package', lazy=True)
+
+    @classmethod
+    def add_package(cls, package_name, description, price):
+        try:
+            package = cls(package_name=package_name, description=description, price=price)
+            db.session.add(package)
+            db.session.commit()
+            return package
+        except Exception as e:
+            db.session.rollback()
+            raise Exception(f"Error adding package: {e}")
+
+    @classmethod
+    def update_package(cls, package_id, package_name=None, description=None, price=None):
+        try:
+            package = cls.query.get(package_id)
+            if not package:
+                raise Exception("Package not found")
+            
+            if package_name:
+                package.package_name = package_name
+            if description:
+                package.description = description
+            if price:
+                package.price = price
+            
+            db.session.commit()
+            return package
+        except Exception as e:
+            db.session.rollback()
+            raise Exception(f"Error updating package: {e}")
+
+    @classmethod
+    def delete_package(cls, package_id):
+        try:
+            package = cls.query.get(package_id)
+            if not package:
+                raise Exception("Package not found")
+            
+            db.session.delete(package)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise Exception(f"Error deleting package: {e}")
+
+    @classmethod
+    def get_all_packages(cls):
+        try:
+            return cls.query.all()
+        except Exception as e:
+            raise Exception(f"Error fetching packages: {e}")

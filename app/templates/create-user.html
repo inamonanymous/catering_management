@@ -1,0 +1,40 @@
+{% extends 'layout.html' %}
+{% block body %}
+<h1>User Registration</h1>
+    <form action="/register" method="POST">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required><br><br>
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required><br><br>
+
+        <label for="firstname">First Name:</label>
+        <input type="text" id="firstname" name="firstname" required><br><br>
+
+        <label for="middlename">Middle Name:</label>
+        <input type="text" id="middlename" name="middlename" required><br><br>
+
+        <label for="lastname">Last Name:</label>
+        <input type="text" id="lastname" name="lastname" required><br><br>
+
+        <label for="suffix">Suffix:</label>
+        <input type="text" id="suffix" name="suffix"><br><br>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required><br><br>
+
+        <label for="phone_number">Phone Number:</label>
+        <input type="tel" id="phone_number" name="phone_number" required><br><br>
+
+        <label for="phone_number2">Secondary Phone Number:</label>
+        <input type="tel" id="phone_number2" name="phone_number2"><br><br>
+
+        <label for="role">Role:</label>
+        <select id="role" name="role" required>
+            <option value="admin">Admin</option>
+            <option value="customer" selected>Customer</option>
+        </select><br><br>
+
+        <button type="submit">Register</button>
+    </form>
+{% endblock %}
