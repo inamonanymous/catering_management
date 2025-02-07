@@ -62,8 +62,12 @@
       <p class="error-message">No event details found.</p>
     {% endif %}
 
+    
+            
+    
     <div class="add-menu-form">
-      <form action="{{ url_for('main.add_menu_choice', event_id=event.event_id) }}" method="POST">
+        <form action="{{ url_for('main.add_menu_choice', event_id=event.event_id) }}" method="POST" 
+            style="display: {{ 'none' if pending_payments or completed_payments else 'block' }};">  
         <div class="additional-menus">
           <h3>Add More Menus</h3>
           <div>
@@ -90,11 +94,13 @@
         {% for menu in selected_menus %}
           <li>
             {{ menu.menu_name }} -
-            <form action="{{ url_for('main.update_menu_choice', choice_id=menu.choice_id) }}" method="POST" style="display: inline;">
+            <form action="{{ url_for('main.update_menu_choice', choice_id=menu.choice_id) }}" method="POST" 
+                style="display: {{ 'none' if pending_payments or completed_payments else 'inline' }};">  
               <input type="number" name="quantity" value="{{ menu.quantity }}" min="1">
               <button type="submit">Update</button>
             </form>
-            <form action="{{ url_for('main.delete_menu_choice', choice_id=menu.choice_id) }}" method="POST" style="display: inline;">
+            <form action="{{ url_for('main.delete_menu_choice', choice_id=menu.choice_id) }}" method="POST"
+                style="display: {{ 'none' if pending_payments or completed_payments else 'inline' }};">  
               <button type="submit" onclick="return confirm('Are you sure you want to remove this menu item?');">Remove</button>
             </form>
             = {{ menu.quantity * menu.price }}
