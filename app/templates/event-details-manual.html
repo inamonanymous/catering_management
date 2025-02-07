@@ -1,0 +1,70 @@
+{% extends 'layout.html' %} {% block body %}
+<div class="main-content">
+  {% include 'partials/header.html'%}
+  <div id="eventDetailsManual">
+    <div class="eventDetailsManual-container">
+      <h1>Event Information</h1>
+      <form action="/eventDetailsManual" method="post">
+        <div class="left-container">
+          <div class="field-container">
+            <label>Name of Event :</label>
+            <div class="input-container">
+              <input type="text" name="event_name" required />
+            </div>
+          </div>
+          <div class="field-container">
+            <label>No. of Guest :</label>
+            <div class="input-container">
+              <input type="text" name="event_guest" required />
+            </div>
+          </div>
+          <div class="field-container">
+            <label>Location of Event :</label>
+            <div class="input-container">
+              <input type="text" name="event_location" required />
+            </div>
+          </div>
+          <div class="field-container">
+            <label>Date & Time of Event : </label>
+            <div class="input-container">
+              <input type="date" name="event_date" required />
+            </div>
+          </div>
+          <div class="field-container">
+            <label>Time of food delivered :</label>
+            <div class="input-container">
+              <input type="time" name="food_delivered" required />
+            </div>
+          </div>
+        </div>
+        <div class="right-container">
+          <div class="field-container">
+            <label>Event Theme :</label>
+            <div class="input-container">
+              <input type="text" name="theme" required />
+            </div>
+          </div>
+          <div class="field-container">
+            <label>Color Motif :</label>
+            <div class="input-container">
+              <input type="text" name="color" required />
+            </div>
+          </div>
+          <div class="field-container">
+            <label>Menu:</label>
+            {% for menu in menus %}
+                <div class="input-container">
+                    <input type="checkbox" id="menu_{{ menu.menu_id }}" name="menus" value="{{ menu.menu_id }}">
+                    <label for="menu_{{ menu.menu_id }}">{{ menu.menu_name }} - {{ menu.price }}</label>
+                    <input type="number" name="menu_quantities[{{ menu.menu_id }}]" placeholder="Qty">
+                </div>
+            {% endfor %}
+        </div>        
+        </div>
+        <button class="alt-1" type="submit">Submit</button>
+      </form>
+    </div>
+  </div>
+  {% include 'partials/footer.html'%}
+</div>
+{% endblock %}

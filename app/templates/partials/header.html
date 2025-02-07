@@ -2,23 +2,6 @@
   <div class="logo-container">
     <img src="" alt="Logo" />
   </div>
-  <ul>
-    <li>
-      <a href="{{ url_for('main.dashboard') }}">Home</a>
-    </li>
-    <li>
-      <a href="{{ url_for('main.booking') }}">Book Now</a>
-    </li>
-    <li>
-      <a href="{{ url_for('main.gallery') }}">Gallery</a>
-    </li>
-    <li>
-      <a href="{{ url_for('main.calendar') }}">Calendar</a>
-    </li>
-    <li>
-      <a href="{{ url_for('main.about') }}">About Us</a>
-    </li>
-  </ul>
   <button class="alt-1 logout">
     <a href="/logout">
       Logout
@@ -46,7 +29,7 @@
       <a href="{{ url_for('main.dashboard') }}">Home</a>
     </li>
     <li>
-      <a href="">Book Now</a>
+      <a href="{{ url_for('main.booking') }}">Book Now</a>
     </li>
     <li>
       <a href="{{ url_for('main.gallery') }}">Gallery</a>

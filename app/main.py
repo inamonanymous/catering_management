@@ -1,7 +1,13 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from functools import wraps
+from decimal import Decimal
+from app.models import db
 from app.models.Users import Users
-
+from app.models.Menu import Menu
+from app.models.EventDetails import EventDetails
+from app.models.EventMenuChoices import EventMenuChoices
+from app.models.Bookings import Bookings
+from app.models.Payments import Payments
 
 main = Blueprint('main', 
                  __name__,
@@ -24,16 +30,19 @@ def index():
 @main.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        firstname = request.form['firstname']
-        middlename = request.form['middlename']
-        lastname = request.form['lastname']
-        suffix = request.form['suffix']
-        email = request.form['email']
-        phone_number = request.form['phone_number']
-        phone_number2 = request.form.get('phone_number2')
-        role = request.form['role']
+        username = request.form['username'].strip()
+        password = request.form['password'].strip()
+        password2 = request.form['password2'].strip()
+        firstname = request.form['firstname'].strip()
+        middlename = request.form['middlename'].strip()
+        lastname = request.form['lastname'].strip()
+        suffix = request.form['suffix'].strip()
+        email = request.form['email'].strip()
+        phone_number = request.form['phone_number'].strip()
+        phone_number2 = request.form.get('phone_number2').strip()
+
+        if password != password2:
+            return render_template('register.html')
 
         try:
             Users.create_user(
@@ -46,13 +55,13 @@ def register():
                 email=email,
                 phone_number=phone_number,
                 phone_number2=phone_number2,
-                role=role
+                role='customer'
             )
             return redirect(url_for('main.index'))  # Redirect to a success page
         except Exception as e:
             return f"Error: {e}"
 
-    return render_template('create-user.html')
+    return render_template('register.html')
 
 @main.route('/login', methods=["POST", "GET"])
 def login():
@@ -113,29 +122,248 @@ def eventDetails():
     
     return render_template('event-details.html', email=session['user_username'])
 
-@main.route('/manual')
+@main.route('/add-menu-choice/<int:event_id>', methods=['POST'])
 @require_user_session
-def manual():
+def add_menu_choice(event_id):
+    try:
+        args = request.form
+        menu_id = int(args['menus'])
+        quantity = int(args['quantity'])
+
+        # Insert the new menu choice into EventMenuChoices
+        EventMenuChoices.insert(menu_id=menu_id, event_id=event_id, quantity=quantity)
+
+        # Recalculate the total price for the booking
+        total_price = 0
+        event_menu_choices = EventMenuChoices.get_all_choices_by_event_id(event_id)
+        for choice in event_menu_choices:
+            menu = Menu.query.get(choice.menu_id)
+            if menu:
+                total_price += menu.price * choice.quantity
+
+        # Update the total price in the booking
+        booking = Bookings.query.filter_by(event_id=event_id).first()
+        if booking:
+            booking.total_price = total_price
+            db.session.commit()
+
+        flash('Menu item added successfully!')
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error adding menu item: {str(e)}")
+
+    return redirect(url_for('main.booking_confirmation', event_id=event_id))
+
+
+@main.route('/update-menu-choice/<int:choice_id>', methods=['POST'])
+@require_user_session
+def update_menu_choice(choice_id):
+    try:
+        args = request.form
+        new_quantity = int(args['quantity'])
+
+        # Update the quantity in the EventMenuChoices table
+        choice = EventMenuChoices.update_choice_quantity(choice_id, new_quantity)
+        
+        # Recalculate the total price for the booking
+        event_id = choice.event_id
+        EventMenuChoices.update_booking_total_price(event_id)  # Class method to update total price
+        
+        flash('Menu quantity updated successfully!')
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error updating menu quantity: {str(e)}")
+
+    return redirect(request.referrer or url_for('main.booking_confirmation', event_id=choice.event_id))
+
+
+@main.route('/delete-menu-choice/<int:choice_id>', methods=['POST'])
+@require_user_session
+def delete_menu_choice(choice_id):
+    try:
+        # Get the choice by ID
+        choice = EventMenuChoices.query.get_or_404(choice_id)
+        event_id = choice.event_id
+        
+        # Delete the menu choice using the class method
+        EventMenuChoices.delete_choice(choice_id)
+        
+        # Recalculate and update the total price for the booking after the deletion
+        EventMenuChoices.update_booking_total_price(event_id)
+        
+        flash('Menu item removed successfully!')
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting menu item: {str(e)}")
+
+    return redirect(request.referrer or url_for('main.booking_confirmation', event_id=event_id))
+
+@main.route('/delete-booking/<int:booking_id>', methods=['POST'])
+@require_user_session
+def delete_booking(booking_id):
+    try:
+        current_user = get_current_user()
+        # Ensure the booking belongs to the current user
+        booking = Bookings.query.get_or_404(booking_id)
+        if booking.user_id != current_user.user_id:
+            flash("You can only delete your own bookings.")
+            return redirect(url_for('main.booking'))  # Redirect back if the user is not authorized
+
+        # Call the method to delete the booking and associated menu choices
+        if Bookings.delete_booking_with_choices(booking_id):
+            # Delete the event details if no bookings are left
+            if EventDetails.delete_event_details(booking.event_id):
+                flash('Booking and associated event details deleted successfully!')
+            else:
+                flash('Booking deleted, but event details are still associated with other bookings.')
+
+    except Exception as e:
+        flash(f"Error deleting booking: {str(e)}")
+
+    return redirect(url_for('main.booking'))  # Redirect to the booking area or any page you prefer
+
+
+
+@main.route("/booking-confirmation/<int:event_id>")
+def booking_confirmation(event_id):
+    current_user = get_current_user()
+    # Retrieve the event by ID to show a confirmation page or summary
+    event = EventDetails.query.get(event_id)
+    booking = Bookings.get_booking_by_event_id(event_id)
+    # Retrieve the menu choices for this event
+    event_menu_choices = EventMenuChoices.get_all_choices_by_event_id(event_id)
+    # Retrieve all menus and their prices based on the selected items for this event
+    selected_menus = []
+    total_price = 0
+    for choice in event_menu_choices:
+        menu = Menu.query.get(choice.menu_id)
+        selected_menus.append({
+            'choice_id': choice.choice_id,
+            'menu_name': menu.menu_name,
+            'price': menu.price,
+            'quantity': choice.quantity
+        })
+        total_price += menu.price * choice.quantity
+    all_menus = Menu.get_available_menus_for_event(event_id)
+    completed_payments = Payments.get_all_completed_payments_by_user_id(current_user.user_id)
+    pending_payments = Payments.get_all_pending_payments_by_user_id(current_user.user_id)
+    return render_template("booking-confirmation.html", 
+                            pending_payments=pending_payments,
+                            completed_payments=completed_payments,
+                            all_menus=all_menus,
+                            event=event,
+                            selected_menus=selected_menus, 
+                            total_price=total_price,
+                            booking=booking)
+
+@main.route('/eventDetailsManual', methods=['POST', 'GET'])
+@require_user_session
+def eventDetailsManual():
+    current_user = get_current_user()
+    if request.method == "POST":
+        try:
+            args = request.form
+            user_id = current_user.user_id
+
+            # Calculate total price
+            total_price = sum(
+                Menu.query.get(menu_id).price * int(args.get(f'menu_quantities[{menu_id}]', 1))
+                for menu_id in args.getlist('menus')
+                if Menu.query.get(menu_id)
+            )
+
+            # Create event
+            new_event = EventDetails.insert(
+                event_name=args['event_name'],
+                number_of_guests=args['event_guest'],
+                event_date=args['event_date'],
+                food_time=args['food_delivered'],
+                event_location=args['event_location'],
+                event_theme=args['theme'],
+                event_color=args['color']
+            )
+
+            # Create booking
+            new_booking = Bookings.insert(
+                user_id=user_id,
+                total_price=total_price, 
+                status='to-pay',
+                event_id=new_event.event_id
+            )
+
+            # Add menu choices
+            for menu_id in args.getlist('menus'):
+                EventMenuChoices.insert(
+                    menu_id=menu_id, event_id=new_event.event_id,
+                    quantity = int(args.get(f'menu_quantities[{menu_id}]', 1))
+                )
+
+            db.session.commit()
+            flash('Booking created successfully!')
+            return redirect(url_for('main.booking_confirmation', 
+                                    event_id=new_event.event_id,
+                                    booking_id=new_booking.booking_id)
+                                    )
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error: {str(e)}")
+            return redirect(url_for('main.eventDetailsManual'))
+
+    return render_template('event-details-manual.html', menus=Menu.query.all(), email=session['user_username'])
+
     
-    return render_template('manual.html', email=session['user_username'])
-    
-@main.route('/payment')
+@main.route('/payment', methods=['POST', 'GET'])
 @require_user_session
 def payment():
+    if request.method == 'POST':
+        # Fetch the necessary fields from the form
+        booking_id = request.form.get('booking_id')
+        event_id = request.form.get('event_id')
+        payment_method = request.form.get('payment_method')
+        amount = Decimal(request.form.get('amount'))  # Ensure the amount is a Decimal type
+        reference_no = request.form.get('reference_no')
+
+        # Get the current user from session
+        current_user = get_current_user()  # Assuming user is retrieved from session
+
+        try:
+            # Call the create_payment method from Payments class with the user_id
+            payment = Payments.create_payment(
+                user_id=current_user.user_id,
+                amount=amount,
+                payment_method=payment_method,
+                reference_no=reference_no
+            )
+            # Associate the payment with the booking and update the paid_amount
+            #booking = Bookings.add_payment(booking_id, payment.payment_id, amount)
+            
+            # Flash a success message and redirect to booking confirmation page
+            flash("Payment received successfully!", "success")
+            return redirect(url_for('main.booking_confirmation', event_id=event_id))
+
+        except ValueError as e:
+            # Handle the exception if the reference number already exists or booking not found
+            flash(str(e), "error")
+            return redirect(url_for('main.booking_confirmation', event_id=event_id))
     
-    return render_template('payment.html', email=session['user_username'])
+    flash("Invalid request method.", "error")
+    return redirect(url_for('main.booking_confirmation'))
 
 @main.route('/qrcode')
 @require_user_session
 def qrcode():
-    
     return render_template('qrcode.html', email=session['user_username'])
 
 @main.route('/booking')
 @require_user_session
 def booking():
-    
-    return render_template('booking.html', email=session['user_username'])
+    current_user = get_current_user()
+    current_user_bookings = Bookings.get_all_bookings_by_user_id(current_user.user_id)
+    return render_template('booking.html', 
+                           current_user_bookings=current_user_bookings,
+                           current_user=current_user
+                           )
 
 @main.route('/existingBooking')
 @require_user_session
@@ -155,3 +383,7 @@ def logout():
     session.clear()
     flash('You have been logged out', 'success')
     return redirect(url_for('main.index'))
+
+@require_user_session
+def get_current_user():
+    return Users.get_user_by_username(session['user_username'])
