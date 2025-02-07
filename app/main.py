@@ -167,7 +167,7 @@ def update_menu_choice(choice_id):
         
         # Recalculate the total price for the booking
         event_id = choice.event_id
-        EventMenuChoices.update_booking_total_price(event_id)  # Class method to update total price
+        Bookings.update_booking_total_price(event_id)  # Class method to update total price
         
         flash('Menu quantity updated successfully!')
     except Exception as e:
@@ -189,7 +189,7 @@ def delete_menu_choice(choice_id):
         EventMenuChoices.delete_choice(choice_id)
         
         # Recalculate and update the total price for the booking after the deletion
-        EventMenuChoices.update_booking_total_price(event_id)
+        Bookings.update_booking_total_price(event_id)
         
         flash('Menu item removed successfully!')
     except Exception as e:
@@ -208,7 +208,7 @@ def delete_booking(booking_id):
         if booking.user_id != current_user.user_id:
             flash("You can only delete your own bookings.")
             return redirect(url_for('main.booking'))  # Redirect back if the user is not authorized
-
+        Payments.delete_payment(booking.payment_id)
         # Call the method to delete the booking and associated menu choices
         if Bookings.delete_booking_with_choices(booking_id):
             # Delete the event details if no bookings are left
@@ -226,7 +226,6 @@ def delete_booking(booking_id):
 
 @main.route("/booking-confirmation/<int:event_id>")
 def booking_confirmation(event_id):
-    current_user = get_current_user()
     # Retrieve the event by ID to show a confirmation page or summary
     event = EventDetails.query.get(event_id)
     booking = Bookings.get_booking_by_event_id(event_id)
@@ -245,8 +244,8 @@ def booking_confirmation(event_id):
         })
         total_price += menu.price * choice.quantity
     all_menus = Menu.get_available_menus_for_event(event_id)
-    completed_payments = Payments.get_all_completed_payments_by_user_id(current_user.user_id)
-    pending_payments = Payments.get_all_pending_payments_by_user_id(current_user.user_id)
+    completed_payments = Bookings.get_completed_payments_by_booking_id(booking.booking_id)
+    pending_payments = Bookings.get_pending_payments_by_booking_id(booking.booking_id)
     return render_template("booking-confirmation.html", 
                             pending_payments=pending_payments,
                             completed_payments=completed_payments,
@@ -319,7 +318,6 @@ def payment():
     if request.method == 'POST':
         # Fetch the necessary fields from the form
         booking_id = request.form.get('booking_id')
-        event_id = request.form.get('event_id')
         payment_method = request.form.get('payment_method')
         amount = Decimal(request.form.get('amount'))  # Ensure the amount is a Decimal type
         reference_no = request.form.get('reference_no')
@@ -330,22 +328,24 @@ def payment():
         try:
             # Call the create_payment method from Payments class with the user_id
             payment = Payments.create_payment(
-                user_id=current_user.user_id,
                 amount=amount,
                 payment_method=payment_method,
                 reference_no=reference_no
             )
             # Associate the payment with the booking and update the paid_amount
-            #booking = Bookings.add_payment(booking_id, payment.payment_id, amount)
+            booking = Bookings.add_payment_to_booking(
+                                                booking_id=booking_id, 
+                                                payment_id=payment.payment_id
+                                                )
             
             # Flash a success message and redirect to booking confirmation page
             flash("Payment received successfully!", "success")
-            return redirect(url_for('main.booking_confirmation', event_id=event_id))
+            return redirect(url_for('main.booking_confirmation', event_id=booking.event_id))
 
         except ValueError as e:
             # Handle the exception if the reference number already exists or booking not found
             flash(str(e), "error")
-            return redirect(url_for('main.booking_confirmation', event_id=event_id))
+            return redirect(url_for('main.booking_confirmation', event_id=booking.event_id))
     
     flash("Invalid request method.", "error")
     return redirect(url_for('main.booking_confirmation'))

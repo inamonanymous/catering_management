@@ -1,6 +1,7 @@
 from app.models import db
 from app.models.EventMenuChoices import EventMenuChoices
 from app.models.Payments import Payments
+from app.models.Menu import Menu
 
 class Bookings(db.Model):
     booking_id = db.Column(db.Integer, primary_key=True)
@@ -17,17 +18,59 @@ class Bookings(db.Model):
     event_details = db.relationship('EventDetails', backref='booking', uselist=False)  # Linking to EventDetails
     packages = db.relationship('Packages', backref='packages', uselist=False)  # Linking to Packages
 
+
     @classmethod
-    def add_payment(cls, booking_id, payment_id, amount):
+    def update_booking_total_price(cls, event_id):
+        # Query to get all the event menu choices for the given event
+        event_menu_choices = db.session.query(EventMenuChoices).filter_by(event_id=event_id).all()
+
+        # Calculate total price
+        total_price = 0
+        for choice in event_menu_choices:
+            # Query the Menu table directly using db.session.query
+            menu = db.session.query(Menu).filter_by(menu_id=choice.menu_id).first()
+            if menu:
+                total_price += menu.price * choice.quantity
+        
+        # Query the Bookings table directly using db.session.query
+        booking = cls.query.filter_by(event_id=event_id).first()
+        if booking:
+            booking.total_price = total_price
+            db.session.commit()
+
+    @classmethod
+    def get_completed_payments_by_booking_id(cls, booking_id):
+        """Retrieve completed payments for a given booking."""
+        booking = cls.query.filter_by(booking_id=booking_id).first()
+        if not booking:
+            return None
+
+        payment = Payments.query.filter_by(payment_id=booking.payment_id, payment_status='completed').first()
+        return payment
+    
+    @classmethod
+    def get_pending_payments_by_booking_id(cls, booking_id):
+        """Retrieve completed payments for a given booking."""
+        booking = cls.query.filter_by(booking_id=booking_id).first()
+        if not booking:
+            return None
+
+        payment = Payments.query.filter_by(payment_id=booking.payment_id, payment_status='pending').first()
+        return payment
+
+    @classmethod
+    def add_payment_to_booking(cls, booking_id, payment_id, amount=None):
         """Add payment to booking and update paid_amount."""
         booking = cls.query.get(booking_id)
-        if booking:
-            booking.paid_amount += amount  # Add the paid amount to the total paid so far
-            booking.payment_id = payment_id  # Optionally, store the payment ID (if needed)
-            db.session.commit()
-            return booking
-        else:
+        if not booking:
             raise ValueError("Booking not found.")
+    
+        if amount is not None:
+            booking.paid_amount += amount  # Add the paid amount to the total paid so far
+        
+        booking.payment_id = payment_id  # Optionally, store the payment ID (if needed)
+        db.session.commit()
+        return booking
 
 
     @classmethod

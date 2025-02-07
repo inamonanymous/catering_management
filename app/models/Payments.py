@@ -1,23 +1,21 @@
 from app.models import db
 class Payments(db.Model):
     payment_id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
     payment_status = db.Column(db.Enum('pending', 'completed', 'failed'), nullable=False, default='pending')
     payment_method = db.Column(db.Enum('gcash', 'maya'), nullable=False)
     reference_no = db.Column(db.String(20), unique=True, nullable=False)
     payment_date = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp())
 
-    @classmethod 
-    def get_all_pending_payments_by_user_id(cls, user_id):
-        return cls.query.filter_by(user_id=user_id, payment_status='pending').first()
-    
-    @classmethod 
-    def get_all_completed_payments_by_user_id(cls, user_id):
-        return cls.query.filter_by(user_id=user_id, payment_status='completed').first()
+    @classmethod
+    def delete_payment(cls, payment_id):
+        target_payment = cls.query.filter_by(payment_id).first()
+        db.session.delete(target_payment)
+        db.session.commit()
+        
 
     @classmethod
-    def create_payment(cls, user_id, amount, payment_method, reference_no, payment_status='pending'):
+    def create_payment(cls, amount, payment_method, reference_no, payment_status='pending'):
         """Create a new payment record."""
         # Check if reference number already exists
         if cls.query.filter_by(reference_no=reference_no).first():
@@ -25,7 +23,6 @@ class Payments(db.Model):
         
         # Create and add the payment to the session
         payment = cls(
-            user_id=user_id,
             amount=amount,
             payment_method=payment_method,
             payment_status=payment_status,

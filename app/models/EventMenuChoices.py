@@ -18,25 +18,6 @@ class EventMenuChoices(db.Model):
             raise Exception(f"Error deleting event menu choices: {str(e)}")
 
     @classmethod
-    def update_booking_total_price(cls, event_id):
-        # Query to get all the event menu choices for the given event
-        event_menu_choices = db.session.query(EventMenuChoices).filter_by(event_id=event_id).all()
-
-        # Calculate total price
-        total_price = 0
-        for choice in event_menu_choices:
-            # Query the Menu table directly using db.session.query
-            menu = db.session.query('menu').filter_by(menu_id=choice.menu_id).first()
-            if menu:
-                total_price += menu.price * choice.quantity
-        
-        # Query the Bookings table directly using db.session.query
-        booking = db.session.query('bookings').filter_by(event_id=event_id).first()
-        if booking:
-            booking.total_price = total_price
-            db.session.commit()
-
-    @classmethod
     def get_all_choices_by_event_id(cls, event_id):
         return cls.query.filter_by(event_id=event_id).all()
 
