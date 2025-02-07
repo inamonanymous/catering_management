@@ -18,6 +18,10 @@ class Users(db.Model):
     bookings = db.relationship('Bookings', backref='user', lazy=True)
 
     @classmethod
+    def get_user_by_username(cls, username):
+        return cls.query.filter_by(username=username).first()
+
+    @classmethod
     def get_all_users(cls):
         """
         Retrieves all users from the database.
