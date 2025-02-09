@@ -22,6 +22,7 @@ html {
 body {
   background: var(--global-color-body);
   font-family: "Montserrat", serif;
+  transition: background 0.3s;
 }
 a {
   transition: 0.3s;
@@ -76,6 +77,7 @@ input {
   border-radius: 5px;
   padding: 10px 20px;
   position: relative;
+  transition: background 0.3s;
   font-size: 14px;
   font-family: "Montserrat", serif;
   transition: border-color 0.3s;
@@ -111,6 +113,7 @@ a {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: 0.3s;
   padding: 15px;
   background-color: var(--global-color-primary);
   filter: drop-shadow(0 10px 8px rgb(0 0 0 / 0.04))
@@ -123,6 +126,7 @@ a {
   width: 100%;
   z-index: 999;
   left: 0;
+  transition: 0.3s;
   display: flex;
   justify-content: center;
   padding: 15px;
@@ -140,7 +144,7 @@ a {
   filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.1))
     drop-shadow(0 1px 1px rgb(0 0 0 / 0.06));
   overflow: hidden;
-  transition: 0.2s all ease;
+  transition: 0.3s all ease;
 }
 .sidebar-header {
   display: -webkit-box;
@@ -351,6 +355,10 @@ html[data-theme="dark"] #themeIcon {
 html[data-theme="dark"] input {
   color: var(--global-color-white);
   background: var(--global-color-black);
+}
+html[data-theme="dark"] #footer {
+  background: var(--global-color-dark-grey);
+  border-color: var(--global-color-dark-grey);
 }
 @media screen and (max-width: 767px) {
   .main-content {
