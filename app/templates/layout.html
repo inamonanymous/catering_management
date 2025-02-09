@@ -3,6 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      document.documentElement.setAttribute(
+        "data-theme",
+        localStorage.getItem("theme")
+      );
+    </script>
     <link
       rel="stylesheet"
       href="{{ url_for('main.static', filename='styles/style.css') }}"
@@ -10,7 +16,9 @@
     <title>Calapardo's Catering</title>
   </head>
   <body>
+    {% include 'partials/header.html'%}
     <main id="main">{% block body %} {% endblock %}</main>
+    {% include 'partials/sidebar.html'%}
 
     <script
       src="https://code.jquery.com/jquery-3.7.1.min.js"
