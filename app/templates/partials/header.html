@@ -2,43 +2,8 @@
   <div class="logo-container">
     <img src="" alt="Logo" />
   </div>
-  <button class="alt-1 logout">
-    <a href="/logout">
-      Logout
-    </a>
-  </button>
-  <div class="mobile-btn">
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="25"
-      height="25"
-      fill="currentColor"
-      class="bi bi-list"
-      viewBox="0 0 16 16"
-    >
-      <path
-        fill-rule="evenodd"
-        d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5"
-      />
-    </svg>
+  <div class="mobile-header">
+    <button type="button" class="changeTheme bi bi-moon" id="themeIcon"></button>
+    <button type="button" class="bi bi-list" id="btn-sidebar-mobile"></button>
   </div>
 </header>
-<div class="mobile-navbar">
-  <ul>
-    <li>
-      <a href="{{ url_for('main.dashboard') }}">Home</a>
-    </li>
-    <li>
-      <a href="{{ url_for('main.booking') }}">Book Now</a>
-    </li>
-    <li>
-      <a href="{{ url_for('main.gallery') }}">Gallery</a>
-    </li>
-    <li>
-      <a href="{{ url_for('main.calendar') }}">Calendar</a>
-    </li>
-    <li>
-      <a href="{{ url_for('main.about') }}">About Us</a>
-    </li>
-  </ul>
-</div>
