@@ -1,10 +1,6 @@
 <aside class="sidebar">
   <div class="sidebar-header">
-    <img
-      id="logo"
-      src="#"
-      alt="Logo"
-    />
+    <img id="logo" src="#" alt="Logo" />
     <button type="button" class="bi bi-x" id="btn-sidebar-close"></button>
   </div>
   <div class="sidebar-content">
@@ -16,24 +12,42 @@
     <div class="text-center">
       <ul class="nav_list">
         <div class="navigation-item">
-          <a href="#" class="menu-link">
+          <a href="{{ url_for('main.dashboard') }}" class="menu-link">
             <i class="bi bi-speedometer2"></i>
             <span class="links_name">Dashboard</span>
           </a>
         </div>
         <div class="navigation-item">
-          <a href="#" class="menu-link">
-            <i class="bi bi-book"></i>
-            <span class="links_name">Dashboard</span>
+          <a href="{{ url_for('main.booking') }}" class="menu-link">
+            <i class="bi bi-bookmark-check"></i>
+            <span class="links_name">Booking</span>
           </a>
         </div>
         <div class="navigation-item">
-          <a href="#" class="menu-link">
-            <i class="bi bi-search"></i>
-            <span class="links_name">Dashboard</span>
+          <a href="{{ url_for('main.eventDetails') }}" class="menu-link">
+            <i class="bi bi-card-text"></i>
+            <span class="links_name">Event Details Manual</span>
           </a>
         </div>
         <div class="navigation-item">
+          <a href="{{ url_for('main.gallery') }}" class="menu-link">
+            <i class="bi bi-image"></i>
+            <span class="links_name">Gallery</span>
+          </a>
+        </div>
+        <div class="navigation-item">
+          <a href="{{ url_for('main.calendar') }}" class="menu-link">
+            <i class="bi bi-calendar-event"></i>
+            <span class="links_name">Calendar</span>
+          </a>
+        </div>
+        <div class="navigation-item">
+          <a href="{{ url_for('main.package') }}" class="menu-link">
+            <i class="bi bi-box-seam"></i>
+            <span class="links_name">Package</span>
+          </a>
+        </div>
+        <!-- <div class="navigation-item">
           <a class="sub-btn">
             <i class="bi bi-people"></i>
             <span class="links_name">Dashboard</span>
@@ -49,6 +63,18 @@
               <span class="links_name">Dashboard</span>
             </a>
           </div>
+        </div> -->
+        <div class="navigation-item">
+          <a href="{{ url_for('main.about') }}" class="menu-link">
+            <i class="bi bi-info-circle"></i>
+            <span class="links_name">About</span>
+          </a>
+        </div>
+        <div class="navigation-item">
+          <a href="{{ url_for('main.logout') }}" class="menu-link">
+            <i class="bi bi-door-open"></i>
+            <span class="links_name">Logout</span>
+          </a>
         </div>
       </ul>
     </div>

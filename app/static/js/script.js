@@ -51,4 +51,13 @@ $(document).ready(() => {
       sidebar.toggleClass("active");
     }
   });
+
+  $("#bookingTable").DataTable({
+    paging: true,
+    searching: true,
+    ordering: false,
+    info: true,
+    lengthMenu: [10, 25, 50, 100],
+    columnDefs: [{ orderable: false, targets: 6 }],
+  });
 });

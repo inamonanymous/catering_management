@@ -1,68 +1,65 @@
-{% extends 'layout.html' %}
-
-{% block body %}
+{% extends 'layout.html' %} {% block body %}
 <div class="main-content">
-  {% include 'partials/header.html' %}
   <div id="booking">
-    <div class="page-title">
-        <h2>Booking Area</h2>
+    <h2>Booking Area</h2>
+    <div class="booking-container">
+      <button class="alt-1" onclick="window.location.href='/package'">
+        All in Package
+      </button>
+      <button
+        class="alt-1"
+        onclick="window.location.href='/eventDetailsManual'"
+      >
+        Manual Package
+      </button>
     </div>
     <div class="table-con user-bookings">
-        <table>
-            <thead>
-                <th>User</th>
-                <th>Status</th>
-                <th>Payment Status</th>
-                <th>Total Price</th>
-                <th>Event</th>
-                <th>Package</th>
-                <th>Action</th> <!-- New Column for Delete -->
-            </thead>
-            <tbody>
-                {% for i in current_user_bookings %}
-                    <tr>
-                        <td>{{ current_user.username }}</td>
-                        <td>{{ i.status }}</td>
-                        <td>{{ i.is_paid }}</td>
-                        <td>{{ i.total_price }}</td>
-                        <td>
-                            <a href="{{ url_for('main.booking_confirmation', event_id=i.event_id) }}">
-                                {{ i.event_id }}
-                            </a>
-                        </td>
-                        <td>{{ i.package }}</td>
-                        <td>
-                            <!-- Add delete button here -->
-                            <form action="{{ url_for('main.delete_booking', booking_id=i.booking_id) }}" method="POST">
-                                <button type="submit" class="delete-btn" onclick="return confirm('Are you sure you want to delete this booking?');">Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    <div class="booking-container">
-        <div class="booking-widget">
-            <p>All in <br>
-                Package </p>
-            <button class="alt-1">
-                <a href="/package">
-                    Select
-                </a>
-            </button>
-        </div>
-        <div class="booking-widget">
-            <p>Manual <br>
-                Package </p>
-            <button class="alt-1">
-                <a href="/eventDetailsManual">
-                    Select
-                </a>
-            </button>
-        </div>
+      <table id="bookingTable">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Status</th>
+            <th>Payment Status</th>
+            <th>Total Price</th>
+            <th>Event</th>
+            <th>Package</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in current_user_bookings %}
+          <tr>
+            <td>{{ current_user.username }}</td>
+            <td>{{ i.status }}</td>
+            <td>{{ "Paid" if i.is_paid else "Unpaid" }}</td>
+            <td>{{ i.total_price }}</td>
+            <td>
+              <a
+                href="{{ url_for('main.booking_confirmation', event_id=i.event_id) }}"
+              >
+                {{ i.event_id }}
+              </a>
+            </td>
+            <td>{{ i.package }}</td>
+            <td>
+              <form
+                action="{{ url_for('main.delete_booking', booking_id=i.booking_id) }}"
+                method="POST"
+              >
+                <button
+                  type="submit"
+                  class="delete-btn"
+                  onclick="return confirm('Are you sure you want to delete this booking?');"
+                >
+                  Delete
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
-  {% include 'partials/footer.html' %}
 </div>
 {% endblock %}
