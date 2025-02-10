@@ -1,13 +1,18 @@
-from flask import Blueprint, render_template, request, session, redirect, url_for, flash
+from flask import Blueprint, render_template, request, session, redirect, url_for, flash, jsonify, current_app
 from functools import wraps
 from decimal import Decimal
+import os
+from werkzeug.utils import secure_filename
 from app.models import db
 from app.models.Users import Users
+from datetime import datetime
 from app.models.Menu import Menu
 from app.models.EventDetails import EventDetails
 from app.models.EventMenuChoices import EventMenuChoices
 from app.models.Bookings import Bookings
 from app.models.Payments import Payments
+from app.models.Packages import Packages
+from app.models.BlockDates import BlockedDates
 
 main = Blueprint('main', 
                  __name__,
@@ -129,6 +134,73 @@ def thankyou():
 @require_user_session
 def package():
     return render_template('package.html', email=session['user_username'])
+
+@main.route('/add_package', methods=['POST'])
+def add_package():
+    if 'package_image' not in request.files:
+        return jsonify({'error': 'Image is required'}), 400
+
+    package_name = request.form.get('package_name')
+    package_description = request.form.get('package_description')
+    package_price = request.form.get('package_price')
+    package_image = request.files['package_image']
+
+    if not package_name or not package_description or not package_price:
+        return jsonify({'error': 'All fields are required'}), 400
+
+    try:
+        filename = secure_filename(package_image.filename)
+        upload_folder = current_app.config['UPLOAD_FOLDER']
+        if not os.path.exists(upload_folder):
+            os.makedirs(upload_folder)  # Ensure upload folder exists
+
+        image_path = os.path.join(upload_folder, filename)
+        package_image.save(image_path)
+
+        relative_image_path = f"uploads/{filename}"
+        full_image_url = url_for('static', filename=relative_image_path)
+
+        new_package = Packages(
+            package_name=package_name,
+            description=package_description,
+            price=float(package_price),
+            image_path=full_image_url
+        )
+
+        db.session.add(new_package)
+        db.session.commit()
+
+        return jsonify({
+            'success': 'Package added successfully',
+            'package_id': new_package.package_id,
+            'package_name': package_name,
+            'description': package_description,
+            'price': package_price,
+            'image_path': full_image_url
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+    
+@main.route('/get_packages', methods=['GET'])
+def get_packages():
+    try:
+        packages = Packages.query.all()
+        package_list = [
+            {
+                "package_id": p.package_id,
+                "package_name": p.package_name,
+                "description": p.description,
+                "price": p.price,
+                "image_path": p.image_path or "../static/img/background-main.jpg",
+            }
+            for p in packages
+        ]
+        return jsonify(package_list), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @main.route('/eventDetails')
 @require_user_session
@@ -379,6 +451,54 @@ def booking():
                            current_user=current_user
                            )
 
+@main.route('/fetch_bookings')
+def fetch_bookings():
+    try:
+        bookings = Bookings.query.all()
+        events = []
+
+        for booking in bookings:
+            event = {
+                "id": booking.booking_id,
+                "title": f"Booking {booking.booking_id} - {booking.status}",
+                "start": booking.created_at.strftime("%Y-%m-%dT%H:%M:%S"),
+                "status": booking.status,
+                "total_price": float(booking.total_price),
+            }
+            events.append(event)
+
+        return jsonify(events)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@main.route('/fetch_blocked_dates', methods=['GET'])
+def fetch_blocked_dates():
+    try:
+        blocked_dates = BlockedDates.get_blocked_dates()
+        return jsonify(blocked_dates), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main.route('/block_date', methods=['POST'])
+def block_date():
+    try:
+        data = request.get_json()
+        date_str = data.get('date')
+
+        if not date_str:
+            return jsonify({'error': 'Date is required'}), 400
+
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+
+        existing_date = BlockedDates.query.filter_by(date=date_obj).first()
+        if existing_date:
+            return jsonify({'error': 'Date is already blocked'}), 400
+
+        blocked_date = BlockedDates.block_date(date_obj)
+        return jsonify({'success': 'Date blocked successfully', 'date': blocked_date.date.strftime('%Y-%m-%d')}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @main.route('/existingBooking')
 @require_user_session
 def existingBooking():
@@ -401,3 +521,11 @@ def logout():
 @require_user_session
 def get_current_user():
     return Users.get_user_by_username(session['user_username'])
+
+@main.route('/get_user_details', methods=['GET'])
+@require_user_session
+def get_user_details():
+    user = get_current_user()
+    if user:
+        return jsonify({'username': user.username})
+    return jsonify({'error': 'User not found'}), 404

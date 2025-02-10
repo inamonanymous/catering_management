@@ -1,49 +1,58 @@
 {% extends 'layout.html' %} {% block body %}
 <div class="main-content">
   <div id="package">
-    <h2>Event Packages</h2>
+    <div class="header-content">
+      <h2>Event Packages</h2>
+      <button
+        type="button"
+        class="alt-1"
+        data-bs-toggle="modal"
+        data-bs-target="#packageModal"
+      >
+        Add Package
+      </button>
+    </div>
+    {% include 'modals/packageModal.html'%}
     <div class="package-container">
-      <div class="package-widget">
-        <div class="image-container">
-          <img src="../static/img/background-main.jpg" alt="Image" />
-        </div>
-        <button class="alt-1">
-          <a href="/eventDetails"> Select </a>
-        </button>
-      </div>
-      <div class="package-widget">
-        <div class="image-container">
-          <img src="../static/img/background-main.jpg" alt="Image" />
-        </div>
-        <button class="alt-1">
-          <a href="/eventDetails"> Select </a>
-        </button>
-      </div>
-      <div class="package-widget">
-        <div class="image-container">
-          <img src="../static/img/background-main.jpg" alt="Image" />
-        </div>
-        <button class="alt-1">
-          <a href="/eventDetails"> Select </a>
-        </button>
-      </div>
-      <div class="package-widget">
-        <div class="image-container">
-          <img src="../static/img/background-main.jpg" alt="Image" />
-        </div>
-        <button class="alt-1">
-          <a href="/eventDetails"> Select </a>
-        </button>
-      </div>
-      <div class="package-widget">
-        <div class="image-container">
-          <img src="../static/img/background-main.jpg" alt="Image" />
-        </div>
-        <button class="alt-1">
-          <a href="/eventDetails"> Select </a>
-        </button>
-      </div>
     </div>
   </div>
 </div>
+
+<script>
+  $(document).ready(() => {
+    function fetchPackages() {
+      $.ajax({
+        url: "/get_packages",
+        type: "GET",
+        success(response) {
+          $(".package-container").empty();
+
+          response.forEach((pkg) => {
+            let packageHTML = `
+            <div class="package-widget" data-id="${pkg.package_id}">
+              <div class="image-container">
+                <img src="${pkg.image_path}" alt="${pkg.package_name}" />
+              </div>
+              <div class="package-content">
+                <p>${pkg.description}</p>
+                <p>₱ ${pkg.price}</p>
+              </div>
+              <button class="alt-1">
+                <a href="/eventDetails"> Select </a>
+              </button>
+            </div>
+          `;
+            $(".package-container").append(packageHTML);
+          });
+        },
+        error(xhr) {
+          let errorMsg = xhr.responseJSON?.error || "Failed to load packages!";
+          toastr.error(errorMsg);
+        },
+      });
+    }
+
+    fetchPackages();
+  });
+</script>
 {% endblock %}

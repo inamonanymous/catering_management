@@ -1,0 +1,104 @@
+<div
+  class="modal fade"
+  id="packageModal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="packageModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="packageModalLabel">Package Form</h5>
+        <button
+          type="button"
+          class="close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="packageForm" enctype="multipart/form-data">
+          <div class="field-container">
+            <label for="package_image">Package Image</label>
+            <input type="file" name="package_image" required />
+          </div>
+          <div class="field-container">
+            <label for="package_name">Package Name</label>
+            <input
+              type="text"
+              name="package_name"
+              placeholder="Enter Package Name"
+              required
+            />
+          </div>
+          <div class="field-container">
+            <label for="package_description">Package Description</label>
+            <input
+              type="text"
+              name="package_description"
+              placeholder="Enter Package Description"
+              required
+            />
+          </div>
+          <div class="field-container">
+            <label for="package_price">Package Price</label>
+            <input
+              type="number"
+              name="package_price"
+              placeholder="Enter Package Price"
+              required
+            />
+          </div>
+          <div class="button-con">
+            <button type="submit" class="alt-1">Save changes</button>
+          </div>
+        </form>
+        <div id="responseMessage"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  $("#packageForm").submit(function (event) {
+    event.preventDefault();
+
+    let formData = new FormData(this);
+
+    $.ajax({
+      url: "/add_package",
+      type: "POST",
+      data: formData,
+      processData: false,
+      contentType: false,
+      success(response) {
+        toastr.success(`${response.success}`);
+        $("#packageForm")[0].reset();
+        $("#packageModal").modal("hide");
+        let newPackage = `
+            <div class="package-widget" data-id="${pkg.package_id}">
+                <div class="image-container">
+                    <img src="${response.image_path}" alt="${response.package_name}" />
+                </div>
+                <div class="package-content">
+                    <p data-price="${response.description}">${response.description}</p>
+                    <p data-price="${response.price}">₱ ${response.price}</p>
+                </div>
+                <button class="alt-1">
+                    <a href="/eventDetails">Select</a>
+                </button>
+            </div>
+        `;
+
+        $(".package-container").append(newPackage);
+      },
+      error(xhr) {
+        let errorMsg = xhr.responseJSON?.error || "Something went wrong!";
+        toastr.error(`${errorMsg}`);
+      },
+    });
+  });
+</script>

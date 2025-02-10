@@ -4,14 +4,15 @@ class Packages(db.Model):
     package_name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     price = db.Column(db.Numeric(10, 2), nullable=False)
+    image_path = db.Column(db.String(255))
     created_at = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp())
 
     bookings = db.relationship('Bookings', backref='package', lazy=True)
 
     @classmethod
-    def add_package(cls, package_name, description, price):
+    def add_package(cls, package_name, description, price, image_path=None):
         try:
-            package = cls(package_name=package_name, description=description, price=price)
+            package = cls(package_name=package_name, description=description, price=price, image_path=image_path)
             db.session.add(package)
             db.session.commit()
             return package
