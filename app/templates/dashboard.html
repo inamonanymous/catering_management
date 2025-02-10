@@ -1,6 +1,5 @@
 {% extends 'layout.html' %} {% block body %}
 <div class="main-content">
-  {% include 'partials/header.html'%}
   <div id="dashboard">
     <div class="dashboard-text">
       <h1>
@@ -8,7 +7,41 @@
         Calapard's Catering Services
       </h1>
     </div>
+    <div class="booking-statistics">
+      <div class="completed">
+        <span
+          class="{% if completed_count > to_pay_count %}text-green {% elif completed_count == (to_pay_count / 2) %}text-yellow {% elif completed_count / 2 != to_pay_count %}text-red{% endif %}"
+        >
+          {{ completed_count }}
+        </span>
+        <div class="text-container">
+          <i class="bi bi-bookmark-check"></i>
+          <span>Completed</span>
+        </div>
+      </div>
+      <div class="to-pay">
+        <span
+          class="{% if to_pay_count > processing_count %}text-green {% elif to_pay_count == (processing_count / 2) %}text-yellow {% elif (processing_count / 2) not in to_pay_count %}text-red{% endif %}"
+        >
+          {{ to_pay_count }}
+        </span>
+        <div class="text-container">
+          <i class="bi bi-wallet2"></i>
+          <span>To Pay</span>
+        </div>
+      </div>
+      <div class="to-process">
+        <span
+          class="{% if processing_count == 0 %}text-green{% elif processing_count < threshold %}text-red{% endif %}"
+        >
+          {{ processing_count }}
+        </span>
+        <div class="text-container">
+          <i class="bi bi-clock"></i>
+          <span>Processing</span>
+        </div>
+      </div>
+    </div>
   </div>
-  {% include 'partials/footer.html'%}
 </div>
 {% endblock %}

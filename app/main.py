@@ -86,8 +86,22 @@ def login():
 @main.route('/dashboard')
 @require_user_session
 def dashboard():
+    total_bookings = Bookings.query.count()
+    
+    completed_count = Bookings.query.filter_by(status='completed').count()
+    to_pay_count = Bookings.query.filter_by(status='to-pay').count()
+    processing_count = Bookings.query.filter_by(status='processing').count()
 
-    return render_template('dashboard.html', username=session['user_username'])
+    threshold = 0.6 * total_bookings if total_bookings > 0 else 0
+
+    return render_template(
+        'dashboard.html', 
+        username=session['user_username'],
+        completed_count=completed_count,
+        to_pay_count=to_pay_count,
+        processing_count=processing_count,
+        threshold=threshold
+    )
 
 @main.route('/calendar')
 @require_user_session

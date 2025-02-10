@@ -11,6 +11,10 @@
     </script>
     <link
       rel="stylesheet"
+      href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"
+    />
+    <link
+      rel="stylesheet"
       href="{{ url_for('main.static', filename='styles/style.css') }}"
     />
     <title>Calapardo's Catering</title>
@@ -18,13 +22,14 @@
   <body>
     {% include 'partials/header.html'%}
     <main id="main">{% block body %} {% endblock %}</main>
-    {% include 'partials/sidebar.html'%}
+    {% include 'partials/sidebar.html'%} {% include 'partials/footer.html'%}
 
     <script
       src="https://code.jquery.com/jquery-3.7.1.min.js"
       integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
       crossorigin="anonymous"
     ></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="{{ url_for('main.static', filename='js/script.js') }}"></script>
   </body>
 </html>
