@@ -19,13 +19,11 @@
               <tbody>
                 {% for i in all_bookings %}
                 <tr>
-                  <td>{{ i.user.username }}</td>  <!-- Assuming you have a relationship from booking to user -->
+                  <td>{{ i.user.username }}</td>
                   <td>{{ i.status }}</td>
                   <td>
                     {% if i.payment_id %}
-                        <a href="#" class="btn" data-bs-toggle="modal" data-bs-target="#booking_payment_modal" data-value="{{ i.payment_id }}" onclick="fetchPaymentDetails('{{ i.payment_id }}')">
-                            {{ i.payment_id }}
-                        </a>
+                        {{ i.payment_id }}
                     {% else %}
                         Unpaid
                     {% endif %}
@@ -39,7 +37,7 @@
                     </a>
                   </td>
                   <td>{{ i.package }}</td>
-                  <td>
+                  <td class="table-btn">
                     <form
                       action="{{ url_for('main.delete_booking', booking_id=i.booking_id) }}"
                       method="POST"
@@ -52,17 +50,13 @@
                         Delete
                       </button>
                     </form>
+                    <button data-bs-toggle="modal" data-value="{{ i.payment_id }}" onclick="fetchPaymentDetails('{{ i.payment_id }}')">View</button>
                   </td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
-          <!-- Button trigger modal -->
-        
-          
-          <!-- Modal -->
-          <!-- Modal -->
             <div class="modal fade" id="booking_payment_modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true" data-payment-id="">
                 <div class="modal-dialog">
                 <div class="modal-content">
@@ -76,20 +70,18 @@
                     <p><strong>Payment Method:</strong> <span id="payment_method"></span></p>
                     <p><strong>Amount:</strong> <span id="payment_amount"></span></p>
                     <p><strong>Status:</strong> <span id="payment_status"></span></p>
-            
-                    <!-- Edit section -->
                     <div id="edit-section" style="display:none;">
                         <label for="new_amount">Amount:</label>
-                        <input type="number" id="new_amount" class="form-control" step="0.01">
-                        
+                        <input type="number" id="new_amount" class="form-control" placeholder="Enter Amount" step="0.01">
                         <label for="new_payment_method">Payment Method:</label>
                         <select id="new_payment_method" class="form-control">
+                            <option value="" disabled selected hidden>Select Payment Method</option>
                             <option value="gcash">Gcash</option>
                             <option value="maya">Maya</option>
                         </select>
-                        
                         <label for="new_payment_status">Payment Status:</label>
                         <select id="new_payment_status" class="form-control">
+                            <option value="" disabled selected hidden>Select Payment Status</option>
                             <option value="pending">Pending</option>
                             <option value="completed">Completed</option>
                             <option value="failed">Failed</option>
@@ -97,15 +89,14 @@
                     </div>
                     </div>
                     <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="edit-payment-btn">Edit Payment</button>
-                    <button type="button" class="btn btn-warning" id="delete-payment-btn">Delete Payment</button>
-                    <button type="button" class="btn btn-success" id="save-changes-btn" style="display:none;">Save Changes</button>
+                    <button type="button" data-bs-dismiss="modal">Close</button>
+                    <button type="button" id="edit-payment-btn">Edit Payment</button>
+                    <button type="button" id="delete-payment-btn">Delete Payment</button>
+                    <button type="button" id="save-changes-btn" style="display:none;">Save Changes</button>
                     </div>
                 </div>
                 </div>
             </div>
-  
     </div>
 </div>
 <script src="{{ url_for('main.static', filename='js/manage-bookings.js') }}"></script>

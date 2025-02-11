@@ -9,6 +9,12 @@ $(document).ready(() => {
     html.attr("data-theme") == "dark" ? disableDarkMode() : enableDarkMode()
   );
 
+  $.ajaxSetup({
+    headers: {
+      "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"),
+    },
+  });
+
   function enableDarkMode() {
     html.attr("data-theme", "dark");
     themeIcon.removeClass("bi-moon").addClass("bi-sun");
@@ -48,9 +54,9 @@ $(document).ready(() => {
     type: "GET",
     success(response) {
       $(".sidebar .details-content p").text(response.username);
-  
+
       // Check if the role is admin and add admin-specific navigation items
-      if (response.user_role === 'admin') {
+      if (response.user_role === "admin") {
         // Add admin-specific items to the navigation
         $(".sidebar .nav_list").append(`
           <div class="navigation-item">
@@ -67,7 +73,7 @@ $(document).ready(() => {
           </div>
         `);
       }
-  
+
       // Add the Logout button after all the items to ensure it's last
       $(".sidebar .nav_list").append(`
         <div class="navigation-item">
@@ -82,8 +88,6 @@ $(document).ready(() => {
       $(".sidebar .details-content p").text("Guest");
     },
   });
-  
-  
 
   $(document).on("click", function (event) {
     if (
@@ -93,89 +97,117 @@ $(document).ready(() => {
       sidebar.toggleClass("active");
     }
   });
-let calendarEl = $("#calendar-view")[0];
-let bookedDates = new Set(); // Store booked dates to prevent unblocking
-let calendar = new FullCalendar.Calendar(calendarEl, {
-  initialView: "dayGridMonth",
-  editable: false,
-  selectable: true,
-  events: function (fetchInfo, successCallback, failureCallback) {
-    $.ajax({
-      url: "/fetch_bookings",
-      type: "GET",
-      success: function (response) {
-        // Populate booked dates and event data
-        bookedDates.clear(); // Reset stored booked dates
-        response.forEach(event => {
-          bookedDates.add(event.start.split("T")[0]); // Store only YYYY-MM-DD
-        });
-        successCallback(response); // Return events for the calendar
-      },
-      error: function (xhr) {
-        console.error("Error fetching bookings:", xhr.responseText);
-        failureCallback(xhr);
-      },
-    });
-  },
-  dateClick: function (info) {
-    let selectedDate = info.dateStr;
 
-    if (bookedDates.has(selectedDate)) {
-      toastr.error("This date is already booked and cannot be blocked.");
-      return; // Stop the function here
-    }
+  $("#bookingTable").DataTable({
+    paging: true,
+    searching: true,
+    ordering: false,
+    info: true,
+    lengthMenu: [10, 25, 50, 100],
+    columnDefs: [{ orderable: false, targets: 6 }],
+  });
 
-    // If not booked, confirm before blocking
-    Swal.fire({
-      title: "Are you sure?",
-      text: "Do you want to block this date?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, block it!",
-      cancelButtonText: "Cancel"
-    }).then((result) => {
-      if (result.isConfirmed) {
-        $.ajax({
-          url: "/block_date",
-          type: "POST",
-          contentType: "application/json",
-          data: JSON.stringify({ date: selectedDate }),
-          success: function (response) {
-            toastr.success(response.success);
-            calendar.refetchEvents(); // Manually refetch events after blocking
-            fetchBookings();
-          },
-          error: function (xhr) {
-            let errorMsg = xhr.responseJSON?.error || "Something went wrong!";
-            toastr.error(errorMsg);
-          },
-        });
+  let calendarEl = $("#calendar-view")[0];
+  let bookedDates = new Set();
+
+  let calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: "dayGridMonth",
+    editable: false,
+    selectable: true,
+    events: function (fetchInfo, successCallback, failureCallback) {
+      $.ajax({
+        url: "/fetch_bookings",
+        type: "GET",
+        success(response) {
+          bookedDates.clear();
+          response.forEach((event) => {
+            bookedDates.add(event.start.split("T")[0]);
+          });
+          successCallback(response);
+        },
+        error(xhr) {
+          showErrorMessage("Failed to fetch bookings.");
+          failureCallback(xhr);
+        },
+      });
+    },
+    dateClick: function (info) {
+      let selectedDate = info.dateStr;
+      let selectedCell = $("td[data-date='" + selectedDate + "']");
+
+      if (bookedDates.has(selectedDate)) {
+        showErrorMessage("This date is already booked and cannot be blocked.");
+        return;
       }
-    });
-  },
-  
-  eventClick: function (info) {
-    let eventId = info.event.extendedProps.event_id; // Get the event_id from extendedProps
-    console.log(eventId);
-    if (eventId) {
-      window.location.href = `/booking-confirmation/${eventId}`;
-    } else {
-      alert("Event ID not found!");
-    }
-  },
 
-  validRange: function (nowDate) {
-    return {
-      start: nowDate,
-    };
-  },
+      if (selectedCell.hasClass("blocked-date")) {
+        showConfirmationModal("Do you want to unblock this date?").then(
+          (result) => {
+            if (result.isConfirmed) {
+              selectedCell.removeClass("blocked-date");
+              $.ajax({
+                url: "/toggle_block_date",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ date: selectedDate }),
+                success(response) {
+                  showSuccessMessage(response.success);
+                  calendar.refetchEvents();
+                  fetchBlockedDates();
+                },
+                error() {
+                  showErrorMessage("Something went wrong!");
+                  selectedCell.addClass("blocked-date");
+                },
+              });
+            }
+          }
+        );
+        return;
+      }
 
-  datesSet: function () {
-    fetchBlockedDates(); // Refetch blocked dates, if necessary
-  },
-});
+      showConfirmationModal("Do you want to block this date?").then(
+        (result) => {
+          if (result.isConfirmed) {
+            selectedCell.addClass("blocked-date");
+            $.ajax({
+              url: "/toggle_block_date",
+              type: "POST",
+              contentType: "application/json",
+              data: JSON.stringify({ date: selectedDate }),
+              success(response) {
+                showSuccessMessage(response.success);
+                calendar.refetchEvents();
+                fetchBlockedDates();
+              },
+              error() {
+                showErrorMessage("Something went wrong!");
+                selectedCell.removeClass("blocked-date");
+              },
+            });
+          }
+        }
+      );
+    },
+    eventClick: function (info) {
+      let eventId = info.event.extendedProps.event_id;
+      if (eventId) {
+        window.location.href = `/booking-confirmation/${eventId}`;
+      } else {
+        alert("Event ID not found!");
+      }
+    },
+    validRange: function (nowDate) {
+      return {
+        start: nowDate,
+      };
+    },
+    datesSet: function () {
+      fetchBlockedDates();
+    },
+  });
 
-calendar.render();
+  calendar.render();
 
   function fetchBlockedDates() {
     $.ajax({
@@ -191,16 +223,27 @@ calendar.render();
   }
 
   fetchBlockedDates();
-
-  $("#bookingTable").DataTable({
-    paging: true,
-    searching: true,
-    ordering: false,
-    info: true,
-    lengthMenu: [10, 25, 50, 100],
-    columnDefs: [{ orderable: false, targets: 6 }],
-  });
-
 });
 
+function showConfirmationModal(text) {
+  return Swal.fire({
+    title: "Confirmation",
+    text: text,
+    icon: "info",
+    iconColor: "#fb64b6",
+    showDenyButton: true,
+    confirmButtonText: "Confirm",
+    confirmButtonColor: "#fb64b6",
+    denyButtonText: "Close",
+    denyButtonColor: "#2c3e50",
+    allowOutsideClick: false,
+  });
+}
 
+function showSuccessMessage(message = null) {
+  toastr.success(message);
+}
+
+function showErrorMessage(message = "Something went wrong!") {
+  toastr.error(message);
+}

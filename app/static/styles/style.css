@@ -54,7 +54,7 @@ button:focus {
 button {
   font-family: "Montserrat", serif;
   padding: 10px 20px;
-  color: var(--global-color-white);
+  color: var(--global-color-black);
   text-transform: uppercase;
   transition: 0.3s;
   border-radius: 5px;
@@ -102,11 +102,23 @@ h5,
 h6 {
   font-weight: 700;
 }
+p:last-of-type {
+  margin: 0;
+}
 p,
 span,
 a {
   color: var(--global-color-black);
   font-size: 14px;
+}
+.table-btn,
+.modal-footer {
+  display: flex;
+  gap: 10px;
+}
+.table-btn button,
+.modal button {
+  font-size: 12px;
 }
 .field-container:not(:last-of-type) {
   margin-bottom: 10px;
@@ -354,7 +366,7 @@ a {
 /* MAIN CONTENT */
 .main-content {
   width: 100%;
-  margin: 30px auto 30px;
+  margin: 30px auto 100px;
   padding: 0 20px 0 100px;
   transition: 0.2s all ease-in-out;
 }
@@ -559,6 +571,15 @@ a {
   display: flex;
   justify-content: flex-end;
 }
+.booking-confirmation-container h2 {
+  margin-top: 20px;
+}
+.fc .fc-daygrid-body-unbalanced .fc-daygrid-day-events {
+  cursor: pointer;
+}
+#bookingTable tbody tr.Paid {
+  background: rgb(251 100 182 / 20%);
+}
 /* DARK MODE */
 html[data-theme="dark"] body,
 html[data-theme="dark"] .modal-header,
@@ -594,7 +615,10 @@ html[data-theme="dark"] .dataTables_wrapper .dataTables_processing,
 html[data-theme="dark"] .dataTables_wrapper .dataTables_paginate,
 html[data-theme="dark"] .modal .modal-header .modal-title,
 html[data-theme="dark"] .modal .modal-header button span,
-html[data-theme="dark"] .modal-body label {
+html[data-theme="dark"] .modal-body label,
+html[data-theme="dark"] button,
+html[data-theme="dark"] #bookingTable thead,
+html[data-theme="dark"] #bookingTable tbody {
   color: var(--global-color-white);
 }
 html[data-theme="dark"] #dashboard .booking-statistics > div,
@@ -655,7 +679,6 @@ html[data-theme="dark"] #footer {
     width: 100%;
   }
 }
-
 
 #manage-bookings h2 {
   margin-bottom: 30px;
