@@ -8,7 +8,7 @@ class Bookings(db.Model):
     event_id = db.Column(db.Integer, db.ForeignKey('event_details.event_id'), nullable=True)  # Added event_id
     package_id = db.Column(db.Integer, db.ForeignKey('packages.package_id'), nullable=True)  # Added event_id
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    payment_id = db.Column(db.Integer, db.ForeignKey('payments.payment_id'))
+    payment_id = db.Column(db.Integer, db.ForeignKey('payments.payment_id'), unique=True)
     paid_amount = db.Column(db.Numeric(10, 2), default=0.0)
     total_price = db.Column(db.Numeric(10, 2), nullable=False)
     status = db.Column(db.Enum('to-pay', 'processing', 'completed'), default='to-pay')
@@ -18,6 +18,37 @@ class Bookings(db.Model):
     event_details = db.relationship('EventDetails', backref='booking', uselist=False)  # Linking to EventDetails
     packages = db.relationship('Packages', backref='packages', uselist=False)  # Linking to Packages
 
+    @classmethod
+    def update_booking_status_based_on_payment(cls, payment_id, new_payment_status, paid_amount):
+        try:
+            """Update the booking status based on the payment status."""
+            booking = cls.query.filter_by(payment_id=payment_id).first()
+
+            if not booking:
+                return None
+            if new_payment_status == "completed":
+                booking.paid_amount = paid_amount
+                booking.status = "processing"  # Move to 'processing' when payment is completed
+            elif new_payment_status == "pending":
+                booking.paid_amount = 0
+                booking.status = "to-pay"  # Revert to 'to-pay' when payment goes back to pending
+            db.session.commit()
+            return booking
+        except:
+            return None
+
+
+    @classmethod
+    def remove_payment(cls, payment_id):
+        try:
+            target_booking = cls.query.filter_by(payment_id=payment_id).first()
+            target_booking.payment_id = None
+            target_booking.status = 'to-pay'
+            db.session.commit()
+            return target_booking
+        except Exception as e:
+            print(e)
+            return None
 
     @classmethod
     def update_booking_total_price(cls, event_id):

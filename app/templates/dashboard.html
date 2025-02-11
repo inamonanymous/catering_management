@@ -21,7 +21,7 @@
       </div>
       <div class="to-pay">
         <span
-          class="{% if to_pay_count > processing_count %}text-green {% elif to_pay_count == (processing_count / 2) %}text-yellow {% elif (processing_count / 2) not in to_pay_count %}text-red{% endif %}"
+          class="{% if to_pay_count > processing_count %}text-green {% elif to_pay_count == (processing_count / 2) %}text-yellow {% elif to_pay_count != (processing_count / 2) %} text-red{% endif %}"
         >
           {{ to_pay_count }}
         </span>

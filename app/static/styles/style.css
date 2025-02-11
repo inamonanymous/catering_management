@@ -655,3 +655,19 @@ html[data-theme="dark"] #footer {
     width: 100%;
   }
 }
+
+
+#manage-bookings h2 {
+  margin-bottom: 30px;
+}
+#manage-bookings .table-con {
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0px 0px 20px 1px rgba(0, 0, 0, 0.1);
+}
+#manage-bookings .booking-container {
+  margin-bottom: 30px;
+  gap: 20px;
+  display: flex;
+  justify-content: flex-end;
+}

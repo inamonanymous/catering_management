@@ -21,8 +21,8 @@
             <th>Status</th>
             <th>Payment Status</th>
             <th>Total Price</th>
+            <th>Paid Amount</th>
             <th>Event</th>
-            <th>Package</th>
             <th>Action</th>
           </tr>
         </thead>
@@ -33,14 +33,12 @@
             <td>{{ i.status }}</td>
             <td>{{ "Paid" if i.is_paid else "Unpaid" }}</td>
             <td>{{ i.total_price }}</td>
+            <td>{{ i.paid_amount }}</td>
             <td>
-              <a
-                href="{{ url_for('main.booking_confirmation', event_id=i.event_id) }}"
-              >
-                {{ i.event_id }}
+              <a href="{{ url_for('main.booking_confirmation', event_id=i.event_id) }}">
+                {{ i.event_name }} - {{ i.event_date.strftime('%Y-%m-%d') }} - {{ i.food_time.strftime('%H:%M') }} - {{ i.event_location }}
               </a>
             </td>
-            <td>{{ i.package }}</td>
             <td>
               <form
                 action="{{ url_for('main.delete_booking', booking_id=i.booking_id) }}"
@@ -57,7 +55,8 @@
             </td>
           </tr>
           {% endfor %}
-        </tbody>
+        </tbody>       
+        
       </table>
     </div>
   </div>

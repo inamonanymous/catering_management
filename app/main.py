@@ -27,6 +27,18 @@ def require_user_session(f):
             return redirect(url_for('main.index'))
         return f(*args, **kwargs) 
     return wrapper
+from functools import wraps
+from flask import redirect
+
+def require_admin_login(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        user = get_current_user()
+        if not user or user.role != 'admin':  # Ensure user exists and has 'admin' role
+            return redirect('main.dashboard')
+        return f(*args, **kwargs)  # Proceed with the decorated function
+    return wrapper
+
 
 @main.route('/')
 def index():
@@ -91,22 +103,27 @@ def login():
 @main.route('/dashboard')
 @require_user_session
 def dashboard():
-    total_bookings = Bookings.query.count()
+    current_user = get_current_user()
     
-    completed_count = Bookings.query.filter_by(status='completed').count()
-    to_pay_count = Bookings.query.filter_by(status='to-pay').count()
-    processing_count = Bookings.query.filter_by(status='processing').count()
+    # Filter the bookings by current_user.user_id
+    total_bookings = Bookings.query.filter_by(user_id=current_user.user_id).count()
+
+    completed_count = Bookings.query.filter_by(user_id=current_user.user_id, status='completed').count()
+    to_pay_count = Bookings.query.filter_by(user_id=current_user.user_id, status='to-pay').count()
+    processing_count = Bookings.query.filter_by(user_id=current_user.user_id, status='processing').count()
 
     threshold = 0.6 * total_bookings if total_bookings > 0 else 0
-
+    
     return render_template(
         'dashboard.html', 
         username=session['user_username'],
+        current_user=current_user,
         completed_count=completed_count,
         to_pay_count=to_pay_count,
         processing_count=processing_count,
         threshold=threshold
     )
+
 
 @main.route('/calendar')
 @require_user_session
@@ -200,6 +217,7 @@ def get_packages():
         ]
         return jsonify(package_list), 200
     except Exception as e:
+        print(e)
         return jsonify({"error": str(e)}), 500
 
 @main.route('/eventDetails')
@@ -445,31 +463,62 @@ def qrcode():
 @require_user_session
 def booking():
     current_user = get_current_user()
-    current_user_bookings = Bookings.get_all_bookings_by_user_id(current_user.user_id)
+    bookings_data = EventDetails.get_user_bookings_with_events(current_user.user_id)
+
+    formatted_bookings = [
+        {
+            "booking_id": booking_id,
+            "status": status,
+            "paid_amount": paid_amount,
+            "total_price": total_price,
+            "payment_id": payment_id,
+            "is_paid": payment_status == "completed",  # Check if the payment status is 'paid'
+            "event_id": event_id,
+            "event_name": event_name,
+            "event_date": event_date,
+            "food_time": food_time,
+            "event_location": event_location,
+        }
+        for booking_id, status, paid_amount, total_price, payment_id, payment_status, event_id, event_name, event_date, food_time, event_location in bookings_data
+    ]
+    print(f"bookings_data: {bookings_data}")
+    print(f"formatted_bookings: {formatted_bookings}")
+
     return render_template('booking.html', 
-                           current_user_bookings=current_user_bookings,
+                           current_user_bookings=formatted_bookings,
                            current_user=current_user
                            )
+
+
 
 @main.route('/fetch_bookings')
 def fetch_bookings():
     try:
-        bookings = Bookings.query.all()
+        bookings = (
+            db.session.query(Bookings)
+            .join(Payments, Payments.payment_id == Bookings.payment_id)
+            .filter(Bookings.status == "processing", Payments.payment_status == "completed")
+            .all()
+        )
+
         events = []
 
         for booking in bookings:
-            event = {
-                "id": booking.booking_id,
-                "title": f"Booking {booking.booking_id} - {booking.status}",
-                "start": booking.created_at.strftime("%Y-%m-%dT%H:%M:%S"),
-                "status": booking.status,
-                "total_price": float(booking.total_price),
-            }
-            events.append(event)
+            if booking.event_details:  # Ensure event details exist
+                event = {
+                    "id": booking.booking_id,
+                    'event_id': booking.event_details.event_id,
+                    "title": f"{booking.event_details.event_name} - {booking.status}",
+                    "start": booking.event_details.event_date.strftime("%Y-%m-%dT%H:%M:%S"),
+                    "status": booking.status,
+                    "total_price": float(booking.total_price),
+                }
+                events.append(event)
 
         return jsonify(events)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @main.route('/fetch_blocked_dates', methods=['GET'])
 def fetch_blocked_dates():
@@ -499,10 +548,86 @@ def block_date():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Edit payment details (Amount or Status)
+@main.route('/edit_payment/<int:payment_id>', methods=['POST'])
+@require_admin_login
+def edit_payment(payment_id):
+    payment = Payments.query.get(payment_id)
+    if not payment:
+        return jsonify({'success': False, 'message': 'Payment not found'}), 404
+
+    data = request.get_json()
+    new_amount = data.get('amount')
+    new_payment_method = data.get('payment_method')
+    new_payment_status = data.get('payment_status')
+
+    if new_amount:
+        payment.amount = new_amount
+    if new_payment_method:
+        payment.payment_method = new_payment_method
+    if new_payment_status:
+        payment.payment_status = new_payment_status
+        # Update booking status based on payment status
+        update_booking_status = Bookings.update_booking_status_based_on_payment(payment_id, new_payment_status, payment.amount)
+        if not update_booking_status:
+            return jsonify({'success': False, 'message': 'booking status not updated'}), 400
+
+
+    db.session.commit()
+
+    return jsonify({'success': True, 'message': 'Payment and booking status updated'})
+
+# Delete payment
+@main.route('/delete_payment/<int:payment_id>', methods=['DELETE'])
+@require_admin_login
+def delete_payment(payment_id):
+    payment = Payments.query.get(payment_id)
+    if not payment:
+        return jsonify({'success': False, 'message': 'Payment not found'}), 404
+    if not Bookings.remove_payment(payment_id):
+        return jsonify({'success': False, 'message': 'Booking not yet paid'}), 404
+    db.session.delete(payment)
+    db.session.commit()
+    
+    return jsonify({'success': True})
+
+@main.route('/get_payment_details/<int:payment_id>', methods=['GET'])
+@require_admin_login
+def get_payment_details(payment_id):
+    payment = Payments.query.get(payment_id)
+    
+    if payment:
+        payment_data = {
+            'reference_no': payment.reference_no,
+            'payment_date': payment.payment_date,
+            'payment_method': payment.payment_method,
+            'amount': str(payment.amount),
+            'payment_status': payment.payment_status
+        }
+        return jsonify(payment_data)
+    
+    return jsonify({'error': 'Payment not found'}), 404
+
+
+@main.route('/manage_bookings')
+@require_user_session
+def manage_bookings():
+    current_user = get_current_user()
+    
+    # Fetch all bookings from the database
+    all_bookings = Bookings.query.all()
+
+    return render_template(
+        'manage-bookings.html', 
+        username=session['user_username'],
+        current_user=current_user,
+        all_bookings=all_bookings
+    )
+
+
 @main.route('/existingBooking')
 @require_user_session
 def existingBooking():
-    
     return render_template('existingBooking.html', email=session['user_username'])
 
 @main.route('/adminLogin')
@@ -527,5 +652,8 @@ def get_current_user():
 def get_user_details():
     user = get_current_user()
     if user:
-        return jsonify({'username': user.username})
+        return jsonify({
+            'username': user.username,
+            'user_role': user.role
+            })
     return jsonify({'error': 'User not found'}), 404
