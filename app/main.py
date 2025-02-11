@@ -528,8 +528,8 @@ def fetch_blocked_dates():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@main.route('/block_date', methods=['POST'])
-def block_date():
+@main.route('/toggle_block_date', methods=['POST'])
+def toggle_block_date():
     try:
         data = request.get_json()
         date_str = data.get('date')
@@ -540,11 +540,17 @@ def block_date():
         date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
 
         existing_date = BlockedDates.query.filter_by(date=date_obj).first()
-        if existing_date:
-            return jsonify({'error': 'Date is already blocked'}), 400
 
-        blocked_date = BlockedDates.block_date(date_obj)
-        return jsonify({'success': 'Date blocked successfully', 'date': blocked_date.date.strftime('%Y-%m-%d')}), 200
+        if existing_date:
+            db.session.delete(existing_date)
+            db.session.commit()
+            return jsonify({'success': 'Date unblocked successfully.', 'date': date_str, 'status': 'unblocked'}), 200
+        else:
+            blocked_date = BlockedDates(date=date_obj)
+            db.session.add(blocked_date)
+            db.session.commit()
+            return jsonify({'success': 'Date blocked successfully.', 'date': date_str, 'status': 'blocked'}), 200
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -554,7 +560,7 @@ def block_date():
 def edit_payment(payment_id):
     payment = Payments.query.get(payment_id)
     if not payment:
-        return jsonify({'success': False, 'message': 'Payment not found'}), 404
+        return jsonify({'success': False, 'message': 'Payment not found.'}), 404
 
     data = request.get_json()
     new_amount = data.get('amount')
@@ -570,12 +576,12 @@ def edit_payment(payment_id):
         # Update booking status based on payment status
         update_booking_status = Bookings.update_booking_status_based_on_payment(payment_id, new_payment_status, payment.amount)
         if not update_booking_status:
-            return jsonify({'success': False, 'message': 'booking status not updated'}), 400
+            return jsonify({'success': False, 'message': 'booking status not updated.'}), 400
 
 
     db.session.commit()
 
-    return jsonify({'success': True, 'message': 'Payment and booking status updated'})
+    return jsonify({'success': True, 'message': 'Payment and booking status updated.'})
 
 # Delete payment
 @main.route('/delete_payment/<int:payment_id>', methods=['DELETE'])
@@ -583,9 +589,9 @@ def edit_payment(payment_id):
 def delete_payment(payment_id):
     payment = Payments.query.get(payment_id)
     if not payment:
-        return jsonify({'success': False, 'message': 'Payment not found'}), 404
+        return jsonify({'success': False, 'message': 'Payment not found.'}), 404
     if not Bookings.remove_payment(payment_id):
-        return jsonify({'success': False, 'message': 'Booking not yet paid'}), 404
+        return jsonify({'success': False, 'message': 'Booking not yet paid.'}), 404
     db.session.delete(payment)
     db.session.commit()
     

@@ -28,7 +28,7 @@
         </thead>
         <tbody>
           {% for i in current_user_bookings %}
-          <tr>
+          <tr class="{{ "Paid" if i.is_paid else "Unpaid" }}">
             <td>{{ current_user.username }}</td>
             <td>{{ i.status }}</td>
             <td>{{ "Paid" if i.is_paid else "Unpaid" }}</td>
@@ -39,7 +39,7 @@
                 {{ i.event_name }} - {{ i.event_date.strftime('%Y-%m-%d') }} - {{ i.food_time.strftime('%H:%M') }} - {{ i.event_location }}
               </a>
             </td>
-            <td>
+            <td class="table-btn">
               <form
                 action="{{ url_for('main.delete_booking', booking_id=i.booking_id) }}"
                 method="POST"

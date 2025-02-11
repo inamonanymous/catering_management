@@ -3,10 +3,9 @@
 {% block body %}
 <div class="main-content">
   <div class="booking-confirmation-container">
-    <h1>Booking Confirmation</h1>
-
     {% if booking %}
         <h2>Booking Confirmation</h2>
+        <hr>
         <p>Event: {{ booking.event_id }}</p>
         <p>Total Price: {{ booking.total_price }}</p>
 
@@ -18,7 +17,6 @@
             {% elif pending_payments %}
                 <p>Your payment is in pending request. Come back again later</p>
             {% elif booking.paid_amount is none or booking.paid_amount == 0 %}
-                <!-- Show the form to pay 50% if nothing is paid yet -->
                 <form action="{{ url_for('main.payment', booking_id=booking.booking_id) }}" method="POST">
                     <select name="payment_method" id="payment_method_select">
                         <option value="gcash">Gcash</option>
@@ -42,12 +40,10 @@
     {% else %}
         <p class="error-message">Booking not found.</p>
     {% endif %}
-
-
-
     {% if event %}
       <div class="event-summary">
         <h2>Event Details</h2>
+        <hr>
         <p><strong>Event Name:</strong> {{ event.event_name }}</p>
         <p><strong>Number of Guests:</strong> {{ event.number_of_guests }}</p>
         <p><strong>Event Date:</strong> {{ event.event_date }}</p>
@@ -59,10 +55,6 @@
     {% else %}
       <p class="error-message">No event details found.</p>
     {% endif %}
-
-    
-            
-    
     <div class="add-menu-form">
         <form action="{{ url_for('main.add_menu_choice', event_id=event.event_id) }}" method="POST" 
             style="display: {{ 'none' if pending_payments or completed_payments else 'block' }};">  
@@ -84,10 +76,10 @@
         </div>
       </form>
     </div>
-
     {% if selected_menus %}
     <div class="menu-summary">
       <h2>Selected Menus</h2>
+      <hr>
       <ul>
         {% for menu in selected_menus %}
           <li>
@@ -105,7 +97,9 @@
           </li>
         {% endfor %}
       </ul>
+      <hr>
       <p><strong>Total Price:</strong> {{ total_price }}</p>
+      <hr>
     </div>
     {% else %}
       <p class="error-message">No menu items selected.</p>
@@ -126,6 +120,7 @@
         <p class="error-message">Booking status unknown.</p>
       {% endif %}
     </div>
+    <hr>
   </div>
 
   {% include 'partials/footer.html' %}
