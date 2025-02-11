@@ -1,5 +1,6 @@
 from app.models import db
 from app.models.Bookings import Bookings
+from app.models.Payments import Payments
 class EventDetails(db.Model):
     event_id = db.Column(db.Integer, primary_key=True)
     event_name = db.Column(db.String(100), nullable=False)
@@ -11,6 +12,28 @@ class EventDetails(db.Model):
     event_color = db.Column(db.String(40), nullable=False)
     created_at = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp())
     updated_at = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+
+    @classmethod
+    def get_user_bookings_with_events(cls, user_id):
+        return (
+            db.session.query(
+                Bookings.booking_id,
+                Bookings.status,
+                Bookings.paid_amount,
+                Bookings.total_price,
+                Bookings.payment_id,
+                Payments.payment_status,  # Get the actual payment status
+                cls.event_id,
+                cls.event_name,
+                cls.event_date,
+                cls.food_time,
+                cls.event_location
+            )
+            .join(cls, cls.event_id == Bookings.event_id)
+            .outerjoin(Payments, Payments.payment_id == Bookings.payment_id)  # Join Payments table
+            .filter(Bookings.user_id == user_id)
+            .all()
+        )
 
     @classmethod
     def delete_event_details(cls, event_id):

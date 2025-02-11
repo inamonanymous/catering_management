@@ -2,8 +2,6 @@
 
 {% block body %}
 <div class="main-content">
-  {% include 'partials/header.html' %}
-
   <div class="booking-confirmation-container">
     <h1>Booking Confirmation</h1>
 
@@ -120,6 +118,7 @@
       {% elif booking and booking.status == "processing" %}
         <p><strong>Status:</strong> Processing</p>
         <p>Your booking is being processed.</p>
+        <p>Amount Paid: {{ booking.paid_amount }}</p>
       {% elif booking and booking.status == "completed" %}
         <p><strong>Status:</strong> Completed</p>
         <p>Thank you! Your booking is confirmed and paid.</p>
