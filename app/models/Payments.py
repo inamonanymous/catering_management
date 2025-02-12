@@ -7,12 +7,18 @@ class Payments(db.Model):
     reference_no = db.Column(db.String(20), unique=True, nullable=False)
     payment_date = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp())
 
+    bookings = db.relationship('Bookings', backref='payments', lazy=True)
+
     @classmethod
     def delete_payment(cls, payment_id):
-        target_payment = cls.query.filter_by(payment_id).first()
-        db.session.delete(target_payment)
-        db.session.commit()
-        
+        try:
+            target_payment = cls.query.filter_by(payment_id=payment_id).first()
+            db.session.delete(target_payment)
+            db.session.commit()
+            return True
+        except Exception as e:
+            print(f"error at payments.delete_payment {e}")
+            return False
 
     @classmethod
     def create_payment(cls, amount, payment_method, reference_no, payment_status='pending'):

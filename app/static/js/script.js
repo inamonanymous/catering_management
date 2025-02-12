@@ -225,6 +225,56 @@ $(document).ready(() => {
   fetchBlockedDates();
 });
 
+function deleteBooking(bookingId) {
+  Swal.fire({
+    title: 'Are you sure?',
+    text: "You won't be able to revert this!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Yes, delete it!'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // Proceed with the API call to delete the booking
+      fetch(`/delete-booking/${bookingId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token() }}',  // Include CSRF token if you're using Flask-WTF
+        },
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            Swal.fire(
+              'Deleted!',
+              'The booking has been deleted.',
+              'success'
+            ).then(() => {
+              // Optionally, reload the page or remove the booking row
+              location.reload();  // Reload the page
+            });
+          } else {
+            Swal.fire(
+              'Error!',
+              'There was a problem deleting the booking.',
+              'error'
+            );
+          }
+        })
+        .catch(error => {
+          Swal.fire(
+            'Error!',
+            'An unexpected error occurred.',
+            'error'
+          );
+          console.error('Error:', error);
+        });
+    }
+  });
+}
+
 function showConfirmationModal(text) {
   return Swal.fire({
     title: "Confirmation",

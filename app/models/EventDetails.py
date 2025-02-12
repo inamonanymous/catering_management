@@ -13,6 +13,8 @@ class EventDetails(db.Model):
     created_at = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp())
     updated_at = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
 
+    bookings = db.relationship('Bookings', backref='events', lazy=True)
+
     @classmethod
     def get_user_bookings_with_events(cls, user_id):
         return (
@@ -48,19 +50,34 @@ class EventDetails(db.Model):
                 return True
         return False
 
+    @classmethod
+    def get_event_by_date(cls, date_obj):
+        try:
+            return cls.query.filter_by(event_date=date_obj).first()
+        except Exception as e:
+            print(f"cannot get event date: {e}")
+            return None
+
     # Removed booking_id, now booking_id is stored in the Booking model (through event_id)
     @classmethod
-    def insert(cls, event_name, number_of_guests, event_date, food_time, event_location, event_theme, event_color):
-        new_event = cls(
-            event_name=event_name,
-            number_of_guests=number_of_guests,
-            event_date=event_date,
-            food_time=food_time,
-            event_location=event_location,
-            event_theme=event_theme,
-            event_color=event_color
-        )
-        db.session.add(new_event)
-        db.session.commit()
-        return new_event
+    def insert(cls, event_name, number_of_guests, event_date_obj, food_time, event_location, event_theme, event_color):
+        if cls.get_event_by_date(event_date_obj):
+            return None
+        try:
+
+            new_event = cls(
+                event_name=event_name,
+                number_of_guests=number_of_guests,
+                event_date=event_date_obj,
+                food_time=food_time,
+                event_location=event_location,
+                event_theme=event_theme,
+                event_color=event_color
+            )
+            db.session.add(new_event)
+            db.session.commit()
+            return new_event
+        except Exception as e:
+            print(f"cannot get event date: {e}")
+            return None
     

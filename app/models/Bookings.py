@@ -17,6 +17,7 @@ class Bookings(db.Model):
     
     event_details = db.relationship('EventDetails', backref='booking', uselist=False)  # Linking to EventDetails
     packages = db.relationship('Packages', backref='packages', uselist=False)  # Linking to Packages
+    
 
     @classmethod
     def update_booking_status_based_on_payment(cls, payment_id, new_payment_status, paid_amount):
@@ -90,31 +91,30 @@ class Bookings(db.Model):
         return payment
 
     @classmethod
-    def add_payment_to_booking(cls, booking_id, payment_id, amount=None):
+    def add_payment_to_booking_current_user(cls, booking_id, payment_id, current_user):
         """Add payment to booking and update paid_amount."""
-        booking = cls.query.get(booking_id)
+        booking = cls.query.filter_by(booking_id=booking_id, user_id=current_user).first()
         if not booking:
             raise ValueError("Booking not found.")
-    
-        if amount is not None:
-            booking.paid_amount += amount  # Add the paid amount to the total paid so far
         
         booking.payment_id = payment_id  # Optionally, store the payment ID (if needed)
         db.session.commit()
         return booking
-
+    
 
     @classmethod
     def delete_booking_with_choices(cls, booking_id):
         try:
             # Get the booking by ID
-            booking = cls.query.get_or_404(booking_id)
+            booking = cls.get_booking_by_booking_id(booking_id)
 
             # Delete all menu choices related to the event
             EventMenuChoices.delete_choices_by_event_id(booking.event_id)
-
             # Delete the booking record
+            print(f"payments: {booking.payments}")
+            print(f"events: {booking.events}")
             db.session.delete(booking)
+
             db.session.commit()
 
             return True  # Booking and choices were deleted successfully
@@ -123,8 +123,8 @@ class Bookings(db.Model):
             raise Exception(f"Error deleting booking and its event menu choices: {str(e)}")
 
     @classmethod
-    def get_all_bookings_by_booking_id(cls, booking_id):
-        return cls.query.filter_by(booking_id=booking_id).all()
+    def get_booking_by_booking_id(cls, booking_id):
+        return cls.query.filter_by(booking_id=booking_id).first()
     
     @classmethod
     def get_all_bookings_by_user_id(cls, user_id):
@@ -133,6 +133,15 @@ class Bookings(db.Model):
     @classmethod
     def get_booking_by_event_id(cls, event_id):
         return cls.query.filter_by(event_id=event_id).first()
+    
+    @classmethod
+    def get_active_booking_by_event_and_user(cls, event_id, user_id):
+        return cls.query.filter(
+            cls.event_id == event_id,
+            cls.user_id == user_id,
+            cls.status != 'completed'
+        ).first()
+
 
     @classmethod
     def delete_booking(cls, booking_id):
