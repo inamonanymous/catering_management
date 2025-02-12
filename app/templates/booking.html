@@ -35,9 +35,7 @@
             <td>{{ i.total_price }}</td>
             <td>{{ i.paid_amount }}</td>
             <td>
-              <a href="{{ url_for('main.booking_confirmation', event_id=i.event_id) }}">
-                {{ i.event_name }} - {{ i.event_date.strftime('%Y-%m-%d') }} - {{ i.food_time.strftime('%H:%M') }} - {{ i.event_location }}
-              </a>
+              {{ i.event_name }} - {{ i.event_date.strftime('%Y-%m-%d') }} - {{ i.food_time.strftime('%H:%M') }} - {{ i.event_location }}
             </td>
             <td class="table-btn">
               <form
@@ -52,6 +50,9 @@
                   Delete
                 </button>
               </form>
+              <button onclick="location.href=`{{ url_for('main.booking_confirmation', event_id=i.event_id) }}`">
+                View
+            </button>
             </td>
           </tr>
           {% endfor %}

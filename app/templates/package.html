@@ -34,8 +34,8 @@
                 <img src="${pkg.image_path}" alt="${pkg.package_name}" />
               </div>
               <div class="package-content">
-                <p>${pkg.description}</p>
-                <p>₱ ${pkg.price}</p>
+                <p data-description="${pkg.description}">${pkg.description}</p>
+                <p data-price="${pkg.price}">₱ ${pkg.price}</p>
               </div>
               <button class="alt-1">
                 <a href="/eventDetails"> Select </a>
