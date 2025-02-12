@@ -105,13 +105,11 @@ def login():
 def dashboard():
     current_user = get_current_user()
     
-    # Filter the bookings by current_user.user_id
     total_bookings = Bookings.query.filter_by(user_id=current_user.user_id).count()
-
     completed_count = Bookings.query.filter_by(user_id=current_user.user_id, status='completed').count()
     to_pay_count = Bookings.query.filter_by(user_id=current_user.user_id, status='to-pay').count()
     processing_count = Bookings.query.filter_by(user_id=current_user.user_id, status='processing').count()
-
+    customer_count = Users.query.filter_by(role='customer').count()
     threshold = 0.6 * total_bookings if total_bookings > 0 else 0
     
     return render_template(
@@ -121,7 +119,8 @@ def dashboard():
         completed_count=completed_count,
         to_pay_count=to_pay_count,
         processing_count=processing_count,
-        threshold=threshold
+        threshold=threshold,
+        customer_count=customer_count
     )
 
 

@@ -74,7 +74,8 @@ button.alt-2 {
 img {
   display: block;
 }
-input:not([type="checkbox"]) {
+input:not([type="checkbox"]),
+select {
   appearance: none;
   border-radius: 5px;
   padding: 10px 20px;
@@ -677,6 +678,18 @@ html[data-theme="dark"] #footer {
   }
   #eventDetailsManual .checkbox .input-container {
     width: 100%;
+  }
+  #dashboard .booking-statistics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  #dashboard .booking-statistics > div {
+    padding: 10px;
+  }
+  #dashboard .booking-statistics > div span:first-of-type {
+    font-size: 25px;
+  }
+  #dashboard .booking-statistics > div .text-container span {
+    font-size: 12px;
   }
 }
 
