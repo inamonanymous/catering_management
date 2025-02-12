@@ -89,6 +89,32 @@ $(document).ready(() => {
     },
   });
 
+  $(document).on("click", ".removePackage", function () {
+    let packageElement = $(this).closest(".package-widget"),
+      packageId = packageElement.data("id");
+
+    showConfirmationModal("Do you want to remove this package?").then(
+      (result) => {
+        if (result.isConfirmed) {
+          $.ajax({
+            url: "/delete_package",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ package_id: packageId }),
+            success(response) {
+              showSuccessMessage(response.message);
+              packageElement.remove();
+            },
+            error(response) {
+              console.log(response);
+              showErrorMessage();
+            },
+          });
+        }
+      }
+    );
+  });
+
   $(document).on("click", function (event) {
     if (
       event.target.id === "btn-sidebar-mobile" ||
@@ -226,53 +252,30 @@ $(document).ready(() => {
 });
 
 function deleteBooking(bookingId) {
-  Swal.fire({
-    title: 'Are you sure?',
-    text: "You won't be able to revert this!",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#d33',
-    cancelButtonColor: '#3085d6',
-    confirmButtonText: 'Yes, delete it!'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      // Proceed with the API call to delete the booking
-      fetch(`/delete-booking/${bookingId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': '{{ csrf_token() }}',  // Include CSRF token if you're using Flask-WTF
-        },
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            Swal.fire(
-              'Deleted!',
-              'The booking has been deleted.',
-              'success'
-            ).then(() => {
-              // Optionally, reload the page or remove the booking row
-              location.reload();  // Reload the page
-            });
-          } else {
-            Swal.fire(
-              'Error!',
-              'There was a problem deleting the booking.',
-              'error'
-            );
-          }
+  showConfirmationModal("Are you sure you want to delete this booking?").then(
+    (result) => {
+      if (result.isConfirmed) {
+        fetch(`/delete-booking/${bookingId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token() }}",
+          },
         })
-        .catch(error => {
-          Swal.fire(
-            'Error!',
-            'An unexpected error occurred.',
-            'error'
-          );
-          console.error('Error:', error);
-        });
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              showSuccessMessage("The booking has been deleted.");
+            } else {
+              showErrorMessage();
+            }
+          })
+          .catch((error) => {
+            showErrorMessage("An unexpected error occurred.");
+          });
+      }
     }
-  });
+  );
 }
 
 function showConfirmationModal(text) {

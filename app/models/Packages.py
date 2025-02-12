@@ -1,4 +1,5 @@
 from app.models import db
+
 class Packages(db.Model):
     package_id = db.Column(db.Integer, primary_key=True)
     package_name = db.Column(db.String(100), nullable=False)
@@ -45,13 +46,14 @@ class Packages(db.Model):
         try:
             package = cls.query.get(package_id)
             if not package:
-                raise Exception("Package not found")
+                return {'error': 'Package not found'}, 404
             
             db.session.delete(package)
             db.session.commit()
+            return {'success': True, 'message': 'Package deleted successfully.'}, 200
         except Exception as e:
             db.session.rollback()
-            raise Exception(f"Error deleting package: {e}")
+            return {'error': f'Error deleting package: {e}'}, 500
 
     @classmethod
     def get_all_packages(cls):

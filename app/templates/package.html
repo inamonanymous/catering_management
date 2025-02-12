@@ -13,8 +13,7 @@
       </button>
     </div>
     {% include 'modals/packageModal.html'%}
-    <div class="package-container">
-    </div>
+    <div class="package-container"></div>
   </div>
 </div>
 
@@ -34,12 +33,14 @@
                 <img src="${pkg.image_path}" alt="${pkg.package_name}" />
               </div>
               <div class="package-content">
+                <h4 data-title="${pkg.package_name}">${pkg.package_name}</h4>
                 <p data-description="${pkg.description}">${pkg.description}</p>
                 <p data-price="${pkg.price}">₱ ${pkg.price}</p>
               </div>
-              <button class="alt-1">
-                <a href="/eventDetails"> Select </a>
-              </button>
+              <div class="btn-container">
+                <button class="alt-2">Edit</button>
+                <button class="alt-1 removePackage">Remove</button>
+              </div>
             </div>
           `;
             $(".package-container").append(packageHTML);

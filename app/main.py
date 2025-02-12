@@ -220,6 +220,15 @@ def get_packages():
         print(e)
         return jsonify({"error": str(e)}), 500
 
+@main.route('/delete_package', methods=['POST'])
+def delete_package():
+    package_id = request.json.get('package_id')
+    if not package_id:
+        return jsonify({'error': 'Package ID is required'}), 400
+    
+    response, status = Packages.delete_package(package_id)
+    return jsonify(response), status
+
 @main.route('/eventDetails')
 @require_user_session
 def eventDetails():

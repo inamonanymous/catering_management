@@ -41,15 +41,8 @@
               <button
                 class="delete-btn"
                 onclick="deleteBooking('{{ i.booking_id }}')"
-              >
-                <button
-                  type="submit"
-                  class="delete-btn"
-                  onclick="return confirm('Are you sure you want to delete this booking?');"
-                >
-                  Delete
-                </button>
-              </form>
+              >Delete
+            </button>
               <button onclick="location.href=`{{ url_for('main.booking_confirmation', event_id=i.event_id) }}`">
                 View
               </button>
