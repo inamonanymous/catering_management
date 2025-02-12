@@ -9,7 +9,8 @@
                 <tr>
                   <th>User</th>
                   <th>Status</th>
-                  <th>Payment Status</th>
+                  <th>Paid Amount</th>
+                  <th>Payment status</th>
                   <th>Total Price</th>
                   <th>Event</th>
                   <th>Package</th>
@@ -19,14 +20,14 @@
               <tbody>
                 {% for i in all_bookings %}
                 <tr>
-                  <td>{{ i.user.username }}</td>
+                    
+                  <td>{{ i.user.username }} </td>
                   <td>{{ i.status }}</td>
                   <td>
-                    {% if i.payment_id %}
-                        {{ i.payment_id }}
-                    {% else %}
-                        Unpaid
-                    {% endif %}
+                    {{ i.paid_amount }}
+                  </td>
+                  <td>
+                    {{ i.payments.payment_status }}
                   </td>
                   <td>{{ i.total_price }}</td>
                   <td>
@@ -38,18 +39,14 @@
                   </td>
                   <td>{{ i.package }}</td>
                   <td class="table-btn">
-                    <form
-                      action="{{ url_for('main.delete_booking', booking_id=i.booking_id) }}"
-                      method="POST"
+                    <button
+                      class="delete-btn"
+                      onclick="deleteBookingByAdmin('{{ i.booking_id }}')"
+                      data-bs-toggle="modal"
+                      data-value="{{ i.payment_id }}"
                     >
-                      <button
-                        type="submit"
-                        class="delete-btn"
-                        onclick="return confirm('Are you sure you want to delete this booking?');"
-                      >
-                        Delete
-                      </button>
-                    </form>
+                      Delete
+                    </button>
                     <button data-bs-toggle="modal" data-value="{{ i.payment_id }}" onclick="fetchPaymentDetails('{{ i.payment_id }}')">View</button>
                   </td>
                 </tr>

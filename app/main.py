@@ -35,7 +35,7 @@ def require_admin_login(f):
     def wrapper(*args, **kwargs):
         user = get_current_user()
         if not user or user.role != 'admin':  # Ensure user exists and has 'admin' role
-            return redirect('main.dashboard')
+            return redirect(url_for('main.dashboard')), 400
         return f(*args, **kwargs)  # Proceed with the decorated function
     return wrapper
 
@@ -152,6 +152,7 @@ def package():
     return render_template('package.html', email=session['user_username'])
 
 @main.route('/add_package', methods=['POST'])
+@require_admin_login
 def add_package():
     if 'package_image' not in request.files:
         return jsonify({'error': 'Image is required'}), 400
@@ -306,25 +307,85 @@ def delete_menu_choice(choice_id):
 def delete_booking(booking_id):
     try:
         current_user = get_current_user()
-        # Ensure the booking belongs to the current user
-        booking = Bookings.query.get_or_404(booking_id)
-        if booking.user_id != current_user.user_id:
-            flash("You can only delete your own bookings.")
-            return redirect(url_for('main.booking'))  # Redirect back if the user is not authorized
-        Payments.delete_payment(booking.payment_id)
-        # Call the method to delete the booking and associated menu choices
-        if Bookings.delete_booking_with_choices(booking_id):
-            # Delete the event details if no bookings are left
-            if EventDetails.delete_event_details(booking.event_id):
-                flash('Booking and associated event details deleted successfully!')
-            else:
-                flash('Booking deleted, but event details are still associated with other bookings.')
+        booking = Bookings.get_booking_by_booking_id(booking_id)
+        payment_id = booking.payment_id
+        event_id = booking.event_id
+        package_id = booking.package_id
+
+        # Prevent unauthorized booking deletion
+        if current_user.role != "admin" and booking.user_id != current_user.user_id:
+            return jsonify({'success': False, 'message': 'You can only delete your own bookings.'})
+
+        # Remove the booking and associated menu choices
+        if not Bookings.delete_booking_with_choices(booking.booking_id):
+            return jsonify({'success': False, 'message': 'Failed to delete booking.'})
+
+        # Now call the function to remove parent rows (payment, package, event details)
+        if not remove_booking_parent_rows(event_id, package_id, payment_id):
+            return jsonify({'success': False, 'message': 'Failed to remove parent rows.'})
+
+        return jsonify({'success': True, 'message': 'Booking deleted successfully!'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error deleting booking: {str(e)}'})
+
 
     except Exception as e:
         flash(f"Error deleting booking: {str(e)}")
 
-    return redirect(url_for('main.booking'))  # Redirect to the booking area or any page you prefer
+    return redirect(url_for('main.booking'))
 
+
+def remove_booking_parent_rows(event_id, package_id, payment_id):
+    try:
+        # Remove associated payment if it exists
+        if payment_id:
+            payment = Payments.query.get(payment_id)
+            if payment:
+                db.session.delete(payment)
+
+        # Remove associated package if it exists
+        if package_id:
+            package = Packages.query.get(package_id)
+            if package:
+                db.session.delete(package)
+
+        # Remove event details
+        if event_id:
+            event = EventDetails.query.get(event_id)
+            if event:
+                db.session.delete(event)
+
+        db.session.commit()
+        return True  # Successfully removed parent rows
+
+    except Exception as e:
+        db.session.rollback()  # Rollback in case of error
+        raise Exception(f"Error removing parent rows: {str(e)}")
+
+
+# New endpoint for admin to delete bookings
+@main.route('/delete-booking-by-admin/<int:booking_id>', methods=['POST'])
+@require_admin_login
+def delete_booking_by_admin(booking_id):
+    try:
+        booking = Bookings.get_booking_by_booking_id(booking_id)
+        payment_id = booking.payment_id
+        event_id = booking.event_id
+        package_id = booking.package_id
+
+        # Remove the booking and associated menu choices
+        if not Bookings.delete_booking_with_choices(booking.booking_id):
+            return jsonify({'success': False, 'message': 'Failed to delete booking.'})
+
+        # Call the function to remove parent rows (payment, package, event details)
+        if not remove_booking_parent_rows(event_id, package_id, payment_id):
+            return jsonify({'success': False, 'message': 'Failed to remove parent rows.'})
+
+        return jsonify({'success': True, 'message': 'Booking deleted successfully!'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error deleting booking: {str(e)}'})
 
 
 @main.route("/booking-confirmation/<int:event_id>")
@@ -346,12 +407,11 @@ def booking_confirmation(event_id):
             'quantity': choice.quantity
         })
         total_price += menu.price * choice.quantity
+    current_user = get_current_user()
+    current_user_active_booking = Bookings.get_active_booking_by_event_and_user(event_id, current_user.user_id)
     all_menus = Menu.get_available_menus_for_event(event_id)
-    completed_payments = Bookings.get_completed_payments_by_booking_id(booking.booking_id)
-    pending_payments = Bookings.get_pending_payments_by_booking_id(booking.booking_id)
     return render_template("booking-confirmation.html", 
-                            pending_payments=pending_payments,
-                            completed_payments=completed_payments,
+                            current_user_active_booking=current_user_active_booking,
                             all_menus=all_menus,
                             event=event,
                             selected_menus=selected_menus, 
@@ -373,12 +433,17 @@ def eventDetailsManual():
                 for menu_id in args.getlist('menus')
                 if Menu.query.get(menu_id)
             )
+            
+            date_obj = datetime.strptime(args['event_date'], '%Y-%m-%d').date()
+            if BlockedDates.get_blocked_date_by_date(date_obj):
+                flash(f"cannot insert booking in blocked dates")
+                return redirect(url_for('main.eventDetailsManual'))
 
             # Create event
             new_event = EventDetails.insert(
                 event_name=args['event_name'],
                 number_of_guests=args['event_guest'],
-                event_date=args['event_date'],
+                event_date_obj=datetime.strptime(args['event_date'], '%Y-%m-%d').date(),
                 food_time=args['food_delivered'],
                 event_location=args['event_location'],
                 event_theme=args['theme'],
@@ -418,40 +483,57 @@ def eventDetailsManual():
 @main.route('/payment', methods=['POST', 'GET'])
 @require_user_session
 def payment():
-    if request.method == 'POST':
-        # Fetch the necessary fields from the form
-        booking_id = request.form.get('booking_id')
-        payment_method = request.form.get('payment_method')
-        amount = Decimal(request.form.get('amount'))  # Ensure the amount is a Decimal type
-        reference_no = request.form.get('reference_no')
+    if request.method != 'POST':
+        flash("Invalid request method.", "error")
+        return redirect(url_for('main.booking_confirmation'))
 
-        # Get the current user from session
-        current_user = get_current_user()  # Assuming user is retrieved from session
+    # Fetch form data
+    booking_id = request.form.get('booking_id')
+    payment_method = request.form.get('payment_method')
+    reference_no = request.form.get('reference_no')
+    current_user = get_current_user()
+    try:
+        amount = Decimal(request.form.get('amount'))  # Convert amount to Decimal
+    except (ValueError, TypeError):
+        flash("Invalid payment amount.", "error")
+        return redirect(url_for('main.booking_confirmation'))
 
-        try:
-            # Call the create_payment method from Payments class with the user_id
-            payment = Payments.create_payment(
-                amount=amount,
-                payment_method=payment_method,
-                reference_no=reference_no
-            )
-            # Associate the payment with the booking and update the paid_amount
-            booking = Bookings.add_payment_to_booking(
-                                                booking_id=booking_id, 
-                                                payment_id=payment.payment_id
-                                                )
-            
-            # Flash a success message and redirect to booking confirmation page
-            flash("Payment received successfully!", "success")
-            return redirect(url_for('main.booking_confirmation', event_id=booking.event_id))
+    # Validate booking
+    booking = Bookings.get_booking_by_booking_id(booking_id)
+    if not booking:
+        flash("Booking not found.", "error")
+        return redirect(url_for('main.booking_confirmation'))
 
-        except ValueError as e:
-            # Handle the exception if the reference number already exists or booking not found
-            flash(str(e), "error")
-            return redirect(url_for('main.booking_confirmation', event_id=booking.event_id))
-    
-    flash("Invalid request method.", "error")
-    return redirect(url_for('main.booking_confirmation'))
+    # Validate payment amount
+    min_required_payment = booking.total_price / 2
+    if amount < min_required_payment:
+        flash(f"Amount should be at least 50% ({min_required_payment}).", "warning")
+        return redirect(url_for('main.booking_confirmation', event_id=booking.event_id))
+
+    try:
+        # Create payment entry
+        payment = Payments.create_payment(
+            amount=amount,
+            payment_method=payment_method,
+            reference_no=reference_no
+        )
+
+        # Associate payment with the booking
+        booking_payment = Bookings.add_payment_to_booking_current_user(
+            booking_id=booking_id,
+            payment_id=payment.payment_id,
+            current_user=current_user.user_id
+        )
+
+        flash("Payment received successfully!", "success")
+        return redirect(url_for('main.booking_confirmation', event_id=booking_payment.event_id))
+
+    except ValueError as e:
+        db.session.rollback()
+        flash(str(e), "error")
+
+    return redirect(url_for('main.booking_confirmation', event_id=booking.event_id))
+
 
 @main.route('/qrcode')
 @require_user_session
@@ -480,8 +562,6 @@ def booking():
         }
         for booking_id, status, paid_amount, total_price, payment_id, payment_status, event_id, event_name, event_date, food_time, event_location in bookings_data
     ]
-    print(f"bookings_data: {bookings_data}")
-    print(f"formatted_bookings: {formatted_bookings}")
 
     return render_template('booking.html', 
                            current_user_bookings=formatted_bookings,
@@ -528,6 +608,7 @@ def fetch_blocked_dates():
         return jsonify({'error': str(e)}), 500
 
 @main.route('/toggle_block_date', methods=['POST'])
+@require_admin_login
 def toggle_block_date():
     try:
         data = request.get_json()
@@ -616,12 +697,14 @@ def get_payment_details(payment_id):
 
 @main.route('/manage_bookings')
 @require_user_session
+@require_admin_login
 def manage_bookings():
     current_user = get_current_user()
     
     # Fetch all bookings from the database
     all_bookings = Bookings.query.all()
-
+    for i in all_bookings:
+        print(i.events)
     return render_template(
         'manage-bookings.html', 
         username=session['user_username'],

@@ -3,124 +3,126 @@
 {% block body %}
 <div class="main-content">
   <div class="booking-confirmation-container">
-    {% if booking %}
+
+    {% if not booking %}
+      <p class="error-message">Booking not found.</p>
+    {% else %}
+      <section class="booking-summary">
         <h2>Booking Confirmation</h2>
         <hr>
-        <p>Event: {{ booking.event_id }}</p>
-        <p>Total Price: {{ booking.total_price }}</p>
+        <p><strong>Event ID:</strong> {{ booking.event_id }}</p>
+        <p><strong>Total Price:</strong> {{ booking.total_price }}</p>
+      </section>
 
-        {% if booking.status == 'to-pay' %}
-            <p>Amount Paid: {{ booking.paid_amount if booking.paid_amount is not none else '0' }}</p>
+      {% if not current_user_active_booking %}
+        <p class="error-message">You do not have an active booking.</p>
+      {% elif booking.status == 'processing' %}
+        <p class="info-message">Your booking is already processing, expect us sooner</p>
+      {% else %}
+        <p><strong>Amount Paid:</strong> {{ booking.paid_amount if booking.paid_amount is not none else '0' }}</p>
 
-            {% if completed_payments %}
-                <p>Your booking is 50% paid. This event is now in process.</p>
-            {% elif pending_payments %}
-                <p>Your payment is in pending request. Come back again later</p>
-            {% elif booking.paid_amount is none or booking.paid_amount == 0 %}
-                <form action="{{ url_for('main.payment', booking_id=booking.booking_id) }}" method="POST">
-                    <select name="payment_method" id="payment_method_select">
-                        <option value="gcash">Gcash</option>
-                        <option value="maya">Maya</option>
-                    </select>
-                    {% set half_amount = booking.total_price / 2 %}
-                    <input type="hidden" name="amount" value="{{ half_amount }}">
-                    <input type="hidden" name="event_id" value="{{ booking.event_id }}">
-                    <input type="hidden" name="booking_id" value="{{ booking.booking_id }}">
-                    <input type="number" name="reference_no" placeholder="reference_no" required>
-                    <button type="submit">Pay 50% Now</button>
-                </form>
-
-            {% else %}
-                <p>Your booking is now completed</p>
-            {% endif %}
-
+        {% if booking.payments.payment_status == "completed" %}
+          <p class="success-message">Your booking is 50% paid. This event is now in process.</p>
+        {% elif booking.payments.payment_status == "pending" %}
+          <p>{{ booking.payments.payment_id }}</p>
+          <p class="info-message">Your payment is pending. Please check back later.</p>
+        {% elif booking.paid_amount is none or booking.paid_amount == 0 %}
+          <form action="{{ url_for('main.payment', booking_id=booking.booking_id) }}" method="POST">
+            <label for="payment_method_select">Select Payment Method:</label>
+            <select name="payment_method" id="payment_method_select">
+              <option value="gcash">Gcash</option>
+              <option value="maya">Maya</option>
+            </select>
+            {% set half_amount = booking.total_price / 2 %}
+            <input type="number" name="amount" value="{{ half_amount }}" step="0.01">
+            <input type="hidden" name="event_id" value="{{ booking.event_id }}">
+            <input type="hidden" name="booking_id" value="{{ booking.booking_id }}">
+            <input type="number" name="reference_no" placeholder="Reference Number" required>
+            <button type="submit">Pay 50% Now</button>
+          </form>
         {% else %}
-            <p>Your booking is not in 'to-pay' status.</p>
+          <p class="success-message">Your booking is now completed.</p>
         {% endif %}
-    {% else %}
-        <p class="error-message">Booking not found.</p>
-    {% endif %}
-    {% if event %}
-      <div class="event-summary">
-        <h2>Event Details</h2>
-        <hr>
-        <p><strong>Event Name:</strong> {{ event.event_name }}</p>
-        <p><strong>Number of Guests:</strong> {{ event.number_of_guests }}</p>
-        <p><strong>Event Date:</strong> {{ event.event_date }}</p>
-        <p><strong>Food Delivery Time:</strong> {{ event.food_time }}</p>
-        <p><strong>Event Location:</strong> {{ event.event_location }}</p>
-        <p><strong>Event Theme:</strong> {{ event.event_theme }}</p>
-        <p><strong>Color Motif:</strong> {{ event.event_color }}</p>
-      </div>
-    {% else %}
-      <p class="error-message">No event details found.</p>
-    {% endif %}
-    <div class="add-menu-form">
-        <form action="{{ url_for('main.add_menu_choice', event_id=event.event_id) }}" method="POST" 
-            style="display: {{ 'none' if pending_payments or completed_payments else 'block' }};">  
-        <div class="additional-menus">
+      {% endif %}
+
+      {% if event %}
+        <section class="event-summary">
+          <h2>Event Details</h2>
+          <hr>
+          <p><strong>Event Name:</strong> {{ event.event_name }}</p>
+          <p><strong>Number of Guests:</strong> {{ event.number_of_guests }}</p>
+          <p><strong>Event Date:</strong> {{ event.event_date }}</p>
+          <p><strong>Food Delivery Time:</strong> {{ event.food_time }}</p>
+          <p><strong>Event Location:</strong> {{ event.event_location }}</p>
+          <p><strong>Event Theme:</strong> {{ event.event_theme }}</p>
+          <p><strong>Color Motif:</strong> {{ event.event_color }}</p>
+        </section>
+      {% else %}
+        <p class="error-message">No event details found.</p>
+      {% endif %}
+
+      {% if current_user_active_booking and not pending_payments %}
+        <section class="update-menu-con">
           <h3>Add More Menus</h3>
-          <div>
+          <form action="{{ url_for('main.add_menu_choice', event_id=event.event_id) }}" method="POST">
             <label for="menus">Select Menu:</label>
             <select name="menus" id="menus">
               {% for menu in all_menus %}
                 <option value="{{ menu.menu_id }}">{{ menu.menu_name }} - {{ menu.price }}</option>
               {% endfor %}
             </select>
-          </div>
-          <div>
             <label for="quantity">Quantity:</label>
             <input type="number" name="quantity" id="quantity" min="1" value="1">
-          </div>
-          <button type="submit">Add Menu</button>
-        </div>
-      </form>
-    </div>
-    {% if selected_menus %}
-    <div class="menu-summary">
-      <h2>Selected Menus</h2>
-      <hr>
-      <ul>
-        {% for menu in selected_menus %}
-          <li>
-            {{ menu.menu_name }} -
-            <form action="{{ url_for('main.update_menu_choice', choice_id=menu.choice_id) }}" method="POST" 
-                style="display: {{ 'none' if pending_payments or completed_payments else 'inline' }};">  
-              <input type="number" name="quantity" value="{{ menu.quantity }}" min="1">
-              <button type="submit">Update</button>
-            </form>
-            <form action="{{ url_for('main.delete_menu_choice', choice_id=menu.choice_id) }}" method="POST"
-                style="display: {{ 'none' if pending_payments or completed_payments else 'inline' }};">  
-              <button type="submit" onclick="return confirm('Are you sure you want to remove this menu item?');">Remove</button>
-            </form>
-            = {{ menu.quantity * menu.price }}
-          </li>
-        {% endfor %}
-      </ul>
-      <hr>
-      <p><strong>Total Price:</strong> {{ total_price }}</p>
-      <hr>
-    </div>
-    {% else %}
-      <p class="error-message">No menu items selected.</p>
-    {% endif %}
+            <button type="submit">Add Menu</button>
+          </form>
+        </section>
 
-    <div class="booking-status">
-      {% if booking and booking.status == "to-pay" %}
-        <p><strong>Status:</strong> To Pay</p>
-        <p>Your booking is confirmed. Please proceed with payment to complete the process.</p>
-      {% elif booking and booking.status == "processing" %}
-        <p><strong>Status:</strong> Processing</p>
-        <p>Your booking is being processed.</p>
-        <p>Amount Paid: {{ booking.paid_amount }}</p>
-      {% elif booking and booking.status == "completed" %}
-        <p><strong>Status:</strong> Completed</p>
-        <p>Thank you! Your booking is confirmed and paid.</p>
-      {% else %}
-        <p class="error-message">Booking status unknown.</p>
+        {% if selected_menus %}
+          <section class="menu-summary">
+            <h2>Selected Menus</h2>
+            <hr>
+            <ul>
+              {% for menu in selected_menus %}
+                <li>
+                  {{ menu.menu_name }} - 
+                  <form action="{{ url_for('main.update_menu_choice', choice_id=menu.choice_id) }}" method="POST">
+                    <input type="number" name="quantity" value="{{ menu.quantity }}" min="1">
+                    <button type="submit">Update</button>
+                  </form>
+                  <form action="{{ url_for('main.delete_menu_choice', choice_id=menu.choice_id) }}" method="POST">
+                    <button type="submit" onclick="return confirm('Are you sure you want to remove this menu item?');">Remove</button>
+                  </form>
+                  = {{ menu.quantity * menu.price }}
+                </li>
+              {% endfor %}
+            </ul>
+            <hr>
+            <p><strong>Total Price:</strong> {{ total_price }}</p>
+          </section>
+        {% else %}
+          <p class="error-message">No menu items selected.</p>
+        {% endif %}
       {% endif %}
-    </div>
-    <hr>
+
+      <section class="booking-status">
+        <h2>Booking Status</h2>
+        <hr>
+        {% if booking.status == "to-pay" %}
+          <p><strong>Status:</strong> To Pay</p>
+          <p>Your booking is confirmed. Please proceed with payment to complete the process.</p>
+        {% elif booking.status == "processing" %}
+          <p><strong>Status:</strong> Processing</p>
+          <p>Your booking is being processed.</p>
+          <p>Amount Paid: {{ booking.paid_amount }}</p>
+        {% elif booking.status == "completed" %}
+          <p><strong>Status:</strong> Completed</p>
+          <p>Thank you! Your booking is confirmed and paid.</p>
+        {% else %}
+          <p class="error-message">Booking status unknown.</p>
+        {% endif %}
+      </section>
+
+    {% endif %}
   </div>
 
   {% include 'partials/footer.html' %}

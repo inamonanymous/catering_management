@@ -5,6 +5,14 @@ class BlockedDates(db.Model):
     date = db.Column(db.Date, unique=True, nullable=False)
 
     @classmethod
+    def get_blocked_date_by_date(cls, date_obj):
+        try:
+            return cls.query.filter_by(date=date_obj).first()
+        except Exception as e:
+            print(f"cannot get blocked date: {e}")
+            return None
+
+    @classmethod
     def block_date(cls, date):
         try:
             blocked_date = cls(date=date)
