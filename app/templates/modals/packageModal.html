@@ -79,7 +79,7 @@
         $("#packageForm")[0].reset();
         $("#packageModal").modal("hide");
         let newPackage = `
-            <div class="package-widget" data-id="${pkg.package_id}">
+            <div class="package-widget" data-id="${response.package_id}">
                 <div class="image-container">
                     <img src="${response.image_path}" alt="${response.package_name}" />
                 </div>
@@ -87,9 +87,10 @@
                     <p data-price="${response.description}">${response.description}</p>
                     <p data-price="${response.price}">₱ ${response.price}</p>
                 </div>
-                <button class="alt-1">
-                    <a href="/eventDetails">Select</a>
-                </button>
+                <div class="btn-container">
+                  <button class="alt-2">Edit</button>
+                  <button class="alt-1 removePackage">Remove</button>
+                </div>
             </div>
         `;
 
