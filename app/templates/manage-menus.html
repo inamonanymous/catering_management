@@ -1,0 +1,43 @@
+{% extends 'layout.html' %}
+{% block body %}
+<div class="main-content">
+    <div id="manage-menus">
+        <div class="header-content">
+            <h2>Manage Menus</h2>
+            <button class="view-btn" type="button" data-bs-toggle="modal" data-bs-target="#addMenuModal">
+                Add menu
+            </button>
+        </div>
+        {% include 'modals/manageMenuModals.html'%}
+        <div class="table-con all-menus">
+            <table id="menuTable" class="data-tables">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Price</th>
+                        <th>Created at</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in all_menus %}
+                        <tr>
+                            <td>{{ i.menu_name }}</td>
+                            <td>{{ i.description }}</td>
+                            <td>{{ i.created_at }}</td>
+                            <td>{{ i.price }}</td>
+                            <td class="table-btn">
+                                <button class="delete-btn" data-menu-id="{{ i.menu_id }}" onclick="deleteMenu(this)">Delete</button>
+                                <button class="edit-btn" data-menu-id="{{ i.menu_id }}" onclick="openEditModal(this)">Edit</button>
+                                <button class="view-btn" data-menu-id="{{ i.menu_id }}" onclick="viewMenuItems(this)">View Items</button>
+                            </td>                                                
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script src="{{ url_for('main.static', filename='js/manage-menus.js') }}"></script>
+{% endblock %}

@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, session, redirect, url_fo
 from functools import wraps
 from decimal import Decimal
 import os
+from app.functions import remove_booking_parent_rows
 from werkzeug.utils import secure_filename
 from app.models import db
 from app.models.Users import Users
@@ -13,13 +14,17 @@ from app.models.Bookings import Bookings
 from app.models.Payments import Payments
 from app.models.Packages import Packages
 from app.models.BlockDates import BlockedDates
-
+from app.models.MenuItems import MenuItems
 main = Blueprint('main', 
                  __name__,
                  static_folder='static',
                  template_folder='templates'
                  )
 
+
+from functools import wraps
+
+    
 def require_user_session(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
@@ -27,8 +32,6 @@ def require_user_session(f):
             return redirect(url_for('main.index'))
         return f(*args, **kwargs) 
     return wrapper
-from functools import wraps
-from flask import redirect
 
 def require_admin_login(f):
     @wraps(f)
@@ -38,6 +41,11 @@ def require_admin_login(f):
             return redirect(url_for('main.dashboard')), 400
         return f(*args, **kwargs)  # Proceed with the decorated function
     return wrapper
+
+@require_user_session
+def get_current_user():
+    return Users.get_user_by_username(session['user_username'])
+
 
 
 @main.route('/')
@@ -221,6 +229,7 @@ def get_packages():
         return jsonify({"error": str(e)}), 500
 
 @main.route('/delete_package', methods=['POST'])
+@require_admin_login
 def delete_package():
     package_id = request.json.get('package_id')
     if not package_id:
@@ -229,10 +238,10 @@ def delete_package():
     response, status = Packages.delete_package(package_id)
     return jsonify(response), status
 
+
 @main.route('/eventDetails')
 @require_user_session
 def eventDetails():
-    
     return render_template('event-details.html', email=session['user_username'])
 
 @main.route('/add-menu-choice/<int:event_id>', methods=['POST'])
@@ -343,34 +352,6 @@ def delete_booking(booking_id):
         flash(f"Error deleting booking: {str(e)}")
 
     return redirect(url_for('main.booking'))
-
-
-def remove_booking_parent_rows(event_id, package_id, payment_id):
-    try:
-        # Remove associated payment if it exists
-        if payment_id:
-            payment = Payments.query.get(payment_id)
-            if payment:
-                db.session.delete(payment)
-
-        # Remove associated package if it exists
-        if package_id:
-            package = Packages.query.get(package_id)
-            if package:
-                db.session.delete(package)
-
-        # Remove event details
-        if event_id:
-            event = EventDetails.query.get(event_id)
-            if event:
-                db.session.delete(event)
-
-        db.session.commit()
-        return True  # Successfully removed parent rows
-
-    except Exception as e:
-        db.session.rollback()  # Rollback in case of error
-        raise Exception(f"Error removing parent rows: {str(e)}")
 
 
 # New endpoint for admin to delete bookings
@@ -515,8 +496,13 @@ def payment():
 
     # Validate payment amount
     min_required_payment = booking.total_price / 2
+
     if amount < min_required_payment:
         flash(f"Amount should be at least 50% ({min_required_payment}).", "warning")
+        return redirect(url_for('main.booking_confirmation', event_id=booking.event_id))
+    
+    if amount > booking.total_price:
+        flash(f"Amount should not be above the booking price value ({booking.total_price}).", "warning")
         return redirect(url_for('main.booking_confirmation', event_id=booking.event_id))
 
     try:
@@ -705,11 +691,8 @@ def get_payment_details(payment_id):
 
 
 @main.route('/manage_bookings')
-@require_user_session
 @require_admin_login
 def manage_bookings():
-    current_user = get_current_user()
-    
     # Fetch all bookings from the database
     all_bookings = Bookings.query.all()
     for i in all_bookings:
@@ -717,10 +700,208 @@ def manage_bookings():
     return render_template(
         'manage-bookings.html', 
         username=session['user_username'],
-        current_user=current_user,
         all_bookings=all_bookings
     )
 
+
+@main.route('/delete_user/<string:username>', methods=['POST'])  # Use string instead of int
+@require_admin_login
+def delete_user(username):
+    if not username:
+        return jsonify({'error': 'Username is required'}), 400
+    
+    user_deleted = Users.delete_user(username)
+    if not user_deleted:
+        return jsonify({'error': 'User not found or could not be deleted'}), 400
+
+    return jsonify({"message": "User deleted successfully"}), 200
+
+
+@main.route('/manage_users')
+@require_admin_login
+def manage_users():
+    all_users = Users.query.all()
+    return render_template('manage-users.html', 
+
+                           all_users=all_users)
+
+@main.route('/delete_menu_item/<int:item_id>', methods=['POST'])
+@require_admin_login
+def delete_menu_item(item_id):
+    item = MenuItems.query.get(item_id)
+    
+    if not item:
+        return jsonify({
+            'status': 404,
+            'message': 'Item not found'
+        }), 404  # Return 404 status code if item is not found
+    
+    # Delete the item
+    db.session.delete(item)
+    db.session.commit()
+    
+    return jsonify({
+        'status': 200,
+        'message': 'Item deleted successfully'
+    }), 200  # Return 200 status code when deletion is successful
+
+
+@main.route('/get_menu/<int:menu_id>', methods=['GET'])
+def get_menu(menu_id):
+    menu = Menu.query.get(menu_id)
+    if not menu:
+        return jsonify({"error": "Menu not found"}), 404
+
+    items = MenuItems.query.filter_by(menu_id=menu_id).all()
+    item_list = [
+        {"item_id": i.item_id, "item_name": i.item_name, "category": i.category}
+        for i in items
+    ]
+
+    return jsonify({
+        "menu_id": menu.menu_id,
+        "menu_name": menu.menu_name,
+        "description": menu.description,
+        "price": menu.price,
+        "items": item_list
+    })
+
+
+@main.route('/edit_menu', methods=['POST'])
+@require_admin_login
+def edit_menu():
+    args = request.form
+    menu_id = args.get("menu_id")
+
+    # Fetch the menu by ID
+    menu = Menu.query.get(menu_id)
+    if not menu:
+        return jsonify({"message": "Menu not found"}), 404
+
+    # Update the menu details
+    menu.menu_name = args["menu_name"]
+    menu.description = args["menu_description"]
+    menu.price = args["menu_price"]
+    db.session.commit()
+    print(f"Updated Menu: {menu_id} -> Name: {menu.menu_name}, Description: {menu.description}, Price: {menu.price}")
+
+    # Handle new items being added
+    new_index = 0
+    while f"new_items[{new_index}][name]" in args:
+        new_item_name = args[f"new_items[{new_index}][name]"]
+        new_item_category = args[f"new_items[{new_index}][category]"]
+
+        print(f"Adding New Item: Name={new_item_name}, Category={new_item_category}")
+
+        # Add the new item to the menu
+        new_item = MenuItems(
+            menu_id=menu_id,
+            item_name=new_item_name,
+            category=new_item_category
+        )
+        db.session.add(new_item)
+        new_index += 1
+
+    # Separate logic for adding new items and updating existing items
+    index = 0
+    # Handle updating existing items
+    while f"existing_items[{index}][id]" in args:
+        item_id = args[f"existing_items[{index}][id]"]
+        item_name = args[f"existing_items[{index}][name]"]
+        item_category = args[f"existing_items[{index}][category]"]
+
+        print(f"Processing Existing Item: ID={item_id}, Name={item_name}, Category={item_category}")
+
+        # Check if item exists
+        item = MenuItems.query.get(item_id)
+        
+        # If the item exists, update it
+        if item:
+            print(f"Updating existing item with ID={item_id}")
+            item.item_name = item_name
+            item.category = item_category
+        # If the item doesn't exist, add a new one (though this part should not usually be needed)
+        else:
+            print(f"Item with ID={item_id} not found, creating new item.")
+            new_item = MenuItems(
+                menu_id=menu_id,
+                item_name=item_name,
+                category=item_category
+            )
+            db.session.add(new_item)
+
+        index += 1
+
+    # Commit the changes to the database
+    db.session.commit()
+    print("Database commit completed.")
+
+
+    return jsonify({"message": "menu update success"}), 200
+
+
+
+@main.route('/delete_menu', methods=['POST'])
+@require_admin_login
+def delete_menu():
+    menu_id = request.json.get('menu_id')
+    if not menu_id:
+        return jsonify({'error': 'Menu ID is required'}), 400
+    
+    if not Menu.delete_menu(menu_id):
+        return jsonify({'error': 'cannot delete menu'}), 400
+
+    return jsonify({"message": "menu deleteion success"}), 200
+
+@main.route('/add_menu', methods=['POST'])
+@require_admin_login
+def add_menu():
+    args = request.form
+
+    # Insert menu
+    menu = Menu.insert(
+        menu_name=args['menu_name'],
+        description=args['menu_description'],
+        price=args['menu_price']
+    )
+
+    if not menu:
+        return jsonify({"message": "menu insertion failed"}), 400
+
+    # Insert menu items
+    menu_items = []
+    index = 0
+    while f"menu_items[{index}][name]" in args:
+        item_name = args[f"menu_items[{index}][name]"]
+        category = args[f"menu_items[{index}][category]"]
+        
+        MenuItems.insert(menu_id=menu.menu_id, item_name=item_name, category=category)
+        index += 1
+
+    return jsonify({"message": "menu insertion success"}), 200
+
+    
+@main.route('/get_menu_items', methods=['POST'])
+@require_admin_login
+def get_menu_items():
+    menu_id = request.json.get('menu_id')
+    if not menu_id:
+        return jsonify({'error': 'Menu ID is required'}), 400
+
+    menu_items = MenuItems.query.filter_by(menu_id=menu_id).all()
+    if not menu_items:
+        return jsonify({'error': 'No items found for this menu.'}), 404
+
+    items = [{'item_id': item.item_id, 'item_name': item.item_name, 'category': item.category} for item in menu_items]
+    return jsonify({'menu_items': items}), 200
+
+
+@main.route('/manage_menus')
+@require_admin_login
+def manage_menus():
+    all_menus = Menu.query.all()
+    return render_template('manage-menus.html', 
+                           all_menus=all_menus)
 
 @main.route('/existingBooking')
 @require_user_session
@@ -740,10 +921,6 @@ def logout():
     flash('You have been logged out', 'success')
     return redirect(url_for('main.index'))
 
-@require_user_session
-def get_current_user():
-    return Users.get_user_by_username(session['user_username'])
-
 @main.route('/get_user_details', methods=['GET'])
 @require_user_session
 def get_user_details():
@@ -754,3 +931,5 @@ def get_user_details():
             'user_role': user.role
             })
     return jsonify({'error': 'User not found'}), 404
+
+

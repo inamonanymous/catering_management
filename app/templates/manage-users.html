@@ -1,0 +1,40 @@
+{% extends 'layout.html' %}
+{% block body %}
+<div class="main-content">
+    <div id="manage-users">
+        <h2>Manage Users</h2>
+        <div class="table-con all-users">
+            <table id="usersTable" class="data-tables">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Full name</th>
+                        <th>Email</th>
+                        <th>Phone Number</th>
+                        <th>Secondary Phone Number</th>
+                        <th>Role</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in all_users %}
+                        <tr>
+                            <td>{{ i.username }}</td>
+                            <td>{{ i.lastname }}, {{ i.firstname }} {{ i.middlename }}. {{ i.suffix }}</td>
+                            <td>{{ i.email }}</td>
+                            <td>{{ i.phone_number }}</td>
+                            <td>{{ i.phone_number2 }}</td>
+                            <td>{{ i.role }}</td>
+                            <td class="table-btn">
+                                <button class="delete-btn" data-username="{{ i.username }}">Delete</button>
+                                <button class="edit-btn" data-value="{{ i.username }}">edit</button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script src="{{ url_for('main.static', filename='js/manage-users.js') }}"></script>
+{% endblock %}

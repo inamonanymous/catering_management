@@ -1,5 +1,6 @@
 from app.models import db
 from app.models.EventMenuChoices import EventMenuChoices
+from app.models.MenuItems import MenuItems
 class Menu(db.Model):
     menu_id = db.Column(db.Integer, primary_key=True)
     menu_name = db.Column(db.String(50), nullable=False)
@@ -22,12 +23,31 @@ class Menu(db.Model):
         return cls.query.all()
 
     @classmethod
+    def delete_menu(cls, menu_id):
+        try:
+            target_menu = cls.query.filter_by(menu_id=menu_id).first()
+            if target_menu is None:
+                return False
+            MenuItems.delete_items_by_menu_id(menu_id)
+            db.session.delete(target_menu)
+            db.session.commit()
+            return True
+        except Exception as e:
+            print(f"cannot delete menu: {e}")
+            return False
+
+    @classmethod
     def insert(cls, menu_name, description=None, price=None):
-        new_menu = cls(
-            menu_name=menu_name,
-            description=description,
-            price=price
-        )
-        db.session.add(new_menu)
-        db.session.commit()
-        return new_menu
+        try:
+
+            new_menu = cls(
+                menu_name=menu_name,
+                description=description,
+                price=price
+            )
+            db.session.add(new_menu)
+            db.session.commit()
+            return new_menu
+        except Exception as e:
+            print(f"cannot insert menu {e}")
+            return None
