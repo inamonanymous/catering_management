@@ -12,7 +12,8 @@
         Add Package
       </button>
     </div>
-    {% include 'modals/addPackageModal.html'%}
+    {% include 'modals/addPackageModal.html'%} {% include
+    'modals/editPackageModal.html'%}
     <div class="package-container"></div>
   </div>
 </div>
@@ -27,22 +28,39 @@
           $(".package-container").empty();
 
           response.forEach((pkg) => {
+            let mostCommonBadge = pkg.is_most_common
+              ? '<span class="badge popular-badge">Most Popular</span>'
+              : "";
+
             let packageHTML = `
-            <div class="package-widget" data-id="${pkg.package_id}">
-              <div class="image-container">
-                <img src="${pkg.image_path}" alt="${pkg.package_name}" />
-              </div>
-              <div class="package-content">
-                <h4 data-title="${pkg.package_name}">${pkg.package_name}</h4>
-                <p data-description="${pkg.description}">${pkg.description}</p>
-                <p data-price="${pkg.price}">₱ ${pkg.price}</p>
-              </div>
-              <div class="btn-container">
-                <button class="alt-2">Edit</button>
-                <button class="alt-1 removePackage">Remove</button>
-              </div>
+          <div class="package-widget ${
+            pkg.is_most_common ? "highlight" : ""
+          }" data-id="${pkg.package_id}">
+            <div class="image-container">
+              <img src="${pkg.image_path}" alt="${pkg.package_name}" />
+              ${mostCommonBadge}
             </div>
-          `;
+            <div class="package-content">
+              <input type="number" id="menuQuantity" value="${
+                pkg.menu_quantity
+              }" hidden>
+              <input type="text" data-theme="${pkg.event_theme}" hidden>
+              <input type="text" data-menu="${pkg.menu_quantity}" hidden>
+              <h4 data-title="${pkg.package_name}">${pkg.package_name}</h4>
+              <p data-description="${pkg.description}">${pkg.description}</p>
+              <p data-price="${pkg.price}">₱ ${pkg.price}</p>
+            </div>
+            <div class="btn-container">
+              <button class="alt-2 editPackage" data-id="${
+                pkg.package_id
+              }">Edit</button>
+              <button class="alt-1 removePackage">Remove</button>
+              {% if role == "admin" %}
+                  <button class="alt-1 selectPackage">Select</button>
+              {% endif %}
+            </div>
+          </div>
+        `;
             $(".package-container").append(packageHTML);
           });
         },
@@ -54,6 +72,50 @@
     }
 
     fetchPackages();
+
+    $(document).on("click", ".editPackage", function () {
+      let packageWidget = $(this).closest(".package-widget"),
+        packageId = packageWidget.data("id"),
+        packageName = packageWidget.find("h4").text(),
+        description = packageWidget.find("p:eq(0)").text(),
+        price = packageWidget.find("p:eq(1)").text().replace("₱ ", ""),
+        quantity = packageWidget.find("#menuQuantity").val();
+
+      $("#editPackageId").val(packageId);
+      $("#editPackageName").val(packageName);
+      $("#editDescription").val(description);
+      $("#editPrice").val(price);
+      $("#editMenuQuantity").val(quantity);
+
+      $("#editPackageModal").modal("show");
+    });
+
+    $("#editPackageForm").submit(function (e) {
+      e.preventDefault();
+
+      let packageId = $("#editPackageId").val(),
+        updatedData = {
+          package_name: $("#editPackageName").val(),
+          description: $("#editDescription").val(),
+          price: $("#editPrice").val(),
+          menu_quantity: $("#editMenuQuantity").val(),
+        };
+
+      $.ajax({
+        url: `/update_package/${packageId}`,
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(updatedData),
+        success(response) {
+          showSuccessMessage("Package updated successfully!");
+          $("#editPackageModal").modal("hide");
+          fetchPackages();
+        },
+        error(xhr) {
+          showErrorMessage("Failed to update package!");
+        },
+      });
+    });
   });
 </script>
 {% endblock %}

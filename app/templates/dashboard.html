@@ -49,6 +49,172 @@
         </div>
       </div>
     </div>
+    <div class="charts">
+      <div class="charts-container">
+        <div class="filter-container">
+          <select id="bookingFilter">
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+        <canvas id="bookingChart"></canvas>
+      </div>
+      <div class="charts-container">
+        <canvas id="customerChart"></canvas>
+      </div>
+    </div>
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  $(document).ready(function () {
+    let bookingChart = null,
+      customerChart = null;
+
+    function fetchDashboardData() {
+      $.ajax({
+        url: "/get_dashboard_data",
+        type: "GET",
+        dataType: "json",
+        success(response) {
+          updateCharts(response);
+        },
+        error() {
+          showErrorMessage("Failed to fetch dashboard data.");
+        },
+      });
+    }
+
+    function updateCharts(data) {
+      const bookingCtx = $("#bookingChart").get(0).getContext("2d"),
+        customerCtx = $("#customerChart").get(0).getContext("2d");
+
+      if (bookingChart) bookingChart.destroy();
+      if (customerChart) customerChart.destroy();
+
+      bookingChart = new Chart(bookingCtx, {
+        type: "pie",
+        data: {
+          labels: ["Completed", "To Pay", "Processing"],
+          datasets: [
+            {
+              data: [
+                data.completed_count,
+                data.to_pay_count,
+                data.processing_count,
+              ],
+              backgroundColor: ["#4CAF50", "#FFC107", "#FF5733"],
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: "bottom" },
+            tooltip: {
+              callbacks: {
+                label: function (tooltipItem) {
+                  let value = tooltipItem.raw;
+                  let label = tooltipItem.label || "";
+                  return `${value} ${label} Booking(s)`;
+                },
+              },
+            },
+          },
+        },
+      });
+
+      customerChart = new Chart(customerCtx, {
+        type: "bar",
+        data: {
+          labels: ["Customers"],
+          datasets: [
+            {
+              label: "Total Customers",
+              data: [data.customer_count],
+              backgroundColor: "#007BFF",
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          scales: { y: { beginAtZero: true } },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function (tooltipItem) {
+                  return `${tooltipItem.raw} Customer(s)`;
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+
+    function fetchBookingData(filter = "weekly") {
+      $.ajax({
+        url: `/get_booking_data?filter=${filter}`,
+        type: "GET",
+        dataType: "json",
+        success(response) {
+          updateBookingChart(response);
+        },
+        error() {
+          showErrorMessage("Failed to fetch booking data.");
+        },
+      });
+    }
+
+    function updateBookingChart(data) {
+      const bookingCtx = $("#bookingChart").get(0).getContext("2d");
+
+      if (bookingChart) bookingChart.destroy();
+
+      bookingChart = new Chart(bookingCtx, {
+        type: "pie",
+        data: {
+          labels: data.labels,
+          datasets: [
+            {
+              data: data.values,
+              backgroundColor: [
+                "#4CAF50",
+                "#FFC107",
+                "#FF5733",
+                "#2196F3",
+                "#9C27B0",
+              ],
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: "bottom" },
+            tooltip: {
+              callbacks: {
+                label: function (tooltipItem) {
+                  let value = tooltipItem.raw;
+                  let label = tooltipItem.label || "";
+                  return `${value} ${label} Booking(s)`;
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+
+    fetchDashboardData();
+    fetchBookingData();
+
+    $("#bookingFilter").change(function () {
+      let selectedFilter = $(this).val();
+      fetchBookingData(selectedFilter);
+    });
+  });
+</script>
 {% endblock %}

@@ -2,6 +2,8 @@ from flask import Blueprint, render_template, request, session, redirect, url_fo
 from functools import wraps
 from decimal import Decimal
 import os
+from sqlalchemy.sql import func
+from flask_cors import cross_origin
 from app.functions import remove_booking_parent_rows
 from werkzeug.utils import secure_filename
 from app.models import db
@@ -45,8 +47,6 @@ def require_admin_login(f):
 @require_user_session
 def get_current_user():
     return Users.get_user_by_username(session['user_username'])
-
-
 
 @main.route('/')
 def index():
@@ -131,6 +131,66 @@ def dashboard():
         customer_count=customer_count
     )
 
+@main.route('/get_dashboard_data')
+@require_user_session
+@cross_origin()
+def get_dashboard_data():
+    current_user = get_current_user()
+
+    completed_count = Bookings.query.filter_by(user_id=current_user.user_id, status='completed').count()
+    to_pay_count = Bookings.query.filter_by(user_id=current_user.user_id, status='to-pay').count()
+    processing_count = Bookings.query.filter_by(user_id=current_user.user_id, status='processing').count()
+    customer_count = Users.query.filter_by(role='customer').count()
+
+    return jsonify({
+        "completed_count": completed_count,
+        "to_pay_count": to_pay_count,
+        "processing_count": processing_count,
+        "customer_count": customer_count
+    })
+
+@main.route('/get_booking_data', methods=['GET'])
+@require_user_session
+@cross_origin()  # Allows AJAX calls from the frontend
+def get_booking_data():
+    current_user = get_current_user()
+    filter_type = request.args.get('filter', 'weekly')  # Get filter type (default: weekly)
+
+    # Grouping by week, month, or year
+    if filter_type == "weekly":
+        results = db.session.query(
+            func.week(Bookings.created_at).label("week"),
+            func.count(Bookings.booking_id).label("count")
+        ).filter(Bookings.user_id == current_user.user_id
+        ).group_by("week").all()
+
+        labels = [f"Week {row.week}" for row in results]
+        values = [row.count for row in results]
+
+    elif filter_type == "monthly":
+        results = db.session.query(
+            func.month(Bookings.created_at).label("month"),
+            func.count(Bookings.booking_id).label("count")
+        ).filter(Bookings.user_id == current_user.user_id
+        ).group_by("month").all()
+
+        labels = [f"Month {row.month}" for row in results]
+        values = [row.count for row in results]
+
+    elif filter_type == "yearly":
+        results = db.session.query(
+            func.year(Bookings.created_at).label("year"),
+            func.count(Bookings.booking_id).label("count")
+        ).filter(Bookings.user_id == current_user.user_id
+        ).group_by("year").all()
+
+        labels = [str(row.year) for row in results]
+        values = [row.count for row in results]
+
+    else:
+        return jsonify({"error": "Invalid filter type"}), 400
+
+    return jsonify({"labels": labels, "values": values})
 
 @main.route('/calendar')
 @require_user_session
@@ -157,7 +217,10 @@ def thankyou():
 @main.route('/package')
 @require_user_session
 def package():
-    return render_template('package.html', email=session['user_username'])
+    user = get_current_user();
+
+    if user:
+        return render_template('package.html', email=session['user_username'], role=user.role)
 
 @main.route('/add_package', methods=['POST'])
 @require_admin_login
@@ -168,16 +231,19 @@ def add_package():
     package_name = request.form.get('package_name')
     package_description = request.form.get('package_description')
     package_price = request.form.get('package_price')
+    menu_quantity = request.form.get('menu_quantity')
+    color_motif = request.form.get('color_motif')
+    event_theme = request.form.get('event_theme')
     package_image = request.files['package_image']
 
-    if not package_name or not package_description or not package_price:
+    if not package_name or not package_description or not package_price or not menu_quantity or not color_motif or not event_theme:
         return jsonify({'error': 'All fields are required'}), 400
 
     try:
         filename = secure_filename(package_image.filename)
         upload_folder = current_app.config['UPLOAD_FOLDER']
         if not os.path.exists(upload_folder):
-            os.makedirs(upload_folder)  # Ensure upload folder exists
+            os.makedirs(upload_folder)
 
         image_path = os.path.join(upload_folder, filename)
         package_image.save(image_path)
@@ -189,6 +255,9 @@ def add_package():
             package_name=package_name,
             description=package_description,
             price=float(package_price),
+            color_motif=color_motif,
+            event_theme=event_theme,
+            menu_quantity=menu_quantity,
             image_path=full_image_url
         )
 
@@ -201,6 +270,9 @@ def add_package():
             'package_name': package_name,
             'description': package_description,
             'price': package_price,
+            'color_motif': color_motif,
+            'event_theme': event_theme,
+            'menu_quantity': menu_quantity,
             'image_path': full_image_url
         }), 200
 
@@ -208,25 +280,53 @@ def add_package():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-    
 @main.route('/get_packages', methods=['GET'])
 def get_packages():
     try:
         packages = Packages.query.all()
+        package_counts = (
+            db.session.query(Bookings.package_id, func.count(Bookings.package_id))
+            .filter(Bookings.package_id.isnot(None))
+            .group_by(Bookings.package_id)
+            .order_by(func.count(Bookings.package_id).desc())
+            .all()
+        )
+
+        most_common_package_id = package_counts[0][0] if package_counts else None
         package_list = [
             {
                 "package_id": p.package_id,
                 "package_name": p.package_name,
                 "description": p.description,
+                "event_theme": p.event_theme,
                 "price": p.price,
+                "menu_quantity": p.menu_quantity,
                 "image_path": p.image_path or "../static/img/background-main.jpg",
+                "is_most_common": p.package_id == most_common_package_id
             }
             for p in packages
         ]
+
         return jsonify(package_list), 200
+
     except Exception as e:
         print(e)
         return jsonify({"error": str(e)}), 500
+
+@main.route('/update_package/<int:package_id>', methods=['POST'])
+def update_package(package_id):
+    data = request.json
+    package = Packages.query.get(package_id)
+
+    if not package:
+        return jsonify({"error": "Package not found"}), 404
+
+    for key, value in data.items():
+        if hasattr(package, key):
+            setattr(package, key, value)
+
+    db.session.commit()
+    return jsonify({"message": "Package updated successfully!"}), 200
 
 @main.route('/delete_package', methods=['POST'])
 @require_admin_login
@@ -445,7 +545,8 @@ def eventDetailsManual():
                 user_id=user_id,
                 total_price=total_price, 
                 status='to-pay',
-                event_id=new_event.event_id
+                event_id=new_event.event_id,
+                package_id=args['package_id']
             )
 
             # Add menu choices

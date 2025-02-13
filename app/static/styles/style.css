@@ -375,6 +375,27 @@ a {
 #dashboard .text-red {
   color: #dc2626;
 }
+#dashboard .charts {
+  display: flex;
+  gap: 50px;
+}
+#dashboard .charts > div {
+  width: calc(100% / 2 - 20px);
+}
+#dashboard .filter-container {
+  margin-bottom: 50px;
+}
+#dashboard .charts-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+#dashboard canvas {
+  max-width: 100%;
+  max-height: 400px;
+}
 #dashboard .text-green {
   color: #16a34a;
 }
@@ -493,6 +514,16 @@ a {
   align-items: center;
   margin-bottom: 30px;
 }
+#package .popular-badge {
+  position: absolute;
+  top: -14px;
+  background-color: var(--global-color-primary);
+  color: var(--global-color-black);
+  padding: 8px;
+  border-radius: 200px;
+  font-size: 10px;
+  right: -15px;
+}
 #package .package-container {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -501,6 +532,7 @@ a {
 #package .package-container .package-widget {
   border-radius: 5px;
   display: flex;
+  position: relative;
   flex-direction: column;
   align-items: center;
   gap: 10px;
@@ -619,7 +651,10 @@ html[data-theme="dark"] .modal .modal-header button span,
 html[data-theme="dark"] .modal-body label,
 html[data-theme="dark"] button,
 html[data-theme="dark"] #bookingTable thead,
-html[data-theme="dark"] #bookingTable tbody {
+html[data-theme="dark"] #bookingTable tbody,
+html[data-theme="dark"] label,
+html[data-theme="dark"] #package .popular-badge,
+html[data-theme="dark"] table td {
   color: var(--global-color-white);
 }
 html[data-theme="dark"] #dashboard .booking-statistics > div,
@@ -633,7 +668,15 @@ html[data-theme="dark"] .sidebar ul .navigation-item a:not(.active-link):hover {
 html[data-theme="dark"] .sidebar .active-link {
   background: var(--global-color-dark-black);
 }
-html[data-theme="dark"] input {
+html[data-theme="dark"] input,
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] select,
+html[data-theme="dark"] input:focus,
+html[data-theme="dark"] textarea:focus,
+html[data-theme="dark"] select:focus,
+html[data-theme="dark"]
+  div:where(.swal2-container).swal2-center
+  > .swal2-popup {
   color: var(--global-color-white);
   background: var(--global-color-black);
 }
@@ -690,6 +733,15 @@ html[data-theme="dark"] #footer {
   }
   #dashboard .booking-statistics > div .text-container span {
     font-size: 12px;
+  }
+  #dashboard .charts {
+    flex-direction: column;
+  }
+  #dashboard .charts > div {
+    width: 100%;
+  }
+  #dashboard canvas {
+    max-height: 300px;
   }
 }
 /* manage-bookings */

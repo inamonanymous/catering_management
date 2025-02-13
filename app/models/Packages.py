@@ -5,15 +5,17 @@ class Packages(db.Model):
     package_name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     price = db.Column(db.Numeric(10, 2), nullable=False)
+    menu_quantity = db.Column(db.Integer)
+    event_theme = db.Column(db.String(100), nullable=False)
     image_path = db.Column(db.String(255))
     created_at = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp())
 
     bookings = db.relationship('Bookings', backref='package', lazy=True)
 
     @classmethod
-    def add_package(cls, package_name, description, price, image_path=None):
+    def add_package(cls, package_name, description, price, menu_quantity, event_theme, image_path=None):
         try:
-            package = cls(package_name=package_name, description=description, price=price, image_path=image_path)
+            package = cls(package_name=package_name, description=description, price=price, menu_quantity=menu_quantity, event_theme=event_theme, image_path=image_path)
             db.session.add(package)
             db.session.commit()
             return package
@@ -22,7 +24,7 @@ class Packages(db.Model):
             raise Exception(f"Error adding package: {e}")
 
     @classmethod
-    def update_package(cls, package_id, package_name=None, description=None, price=None):
+    def update_package(cls, package_id, package_name=None, description=None, price=None, menu_quantity=None, event_theme=None):
         try:
             package = cls.query.get(package_id)
             if not package:
@@ -34,6 +36,10 @@ class Packages(db.Model):
                 package.description = description
             if price:
                 package.price = price
+            if menu_quantity:
+                package.menu_quantity = menu_quantity
+            if event_theme:
+                package.event_theme = event_theme
             
             db.session.commit()
             return package

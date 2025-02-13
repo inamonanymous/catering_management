@@ -44,11 +44,29 @@
             />
           </div>
           <div class="field-container">
+            <label for="event_theme">Event Theme</label>
+            <input
+              type="text"
+              name="event_theme"
+              placeholder="Enter Event Theme"
+              required
+            />
+          </div>
+          <div class="field-container">
             <label for="package_price">Package Price</label>
             <input
               type="number"
               name="package_price"
               placeholder="Enter Package Price"
+              required
+            />
+          </div>
+          <div class="field-container">
+            <label for="menu_quantity">Menu Quantity</label>
+            <input
+              type="number"
+              name="menu_quantity"
+              placeholder="Enter Menu Max Quantity"
               required
             />
           </div>
@@ -95,6 +113,7 @@
         `;
 
         $(".package-container").append(newPackage);
+        $(".addPackageModal").click();
       },
       error(xhr) {
         let errorMsg = xhr.responseJSON?.error || "Something went wrong!";
