@@ -13,9 +13,7 @@ $(document).ready(() => {
     headers: {
       "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"),
     },
-    
   });
-  
 
   $(document).on("click", ".removePackage", function () {
     let packageElement = $(this).closest(".package-widget"),
@@ -41,6 +39,19 @@ $(document).ready(() => {
         }
       }
     );
+  });
+
+  $(document).on("click", ".selectPackage", function () {
+    let packageWidget = $(this).closest(".package-widget");
+
+    let eventTheme = packageWidget.find("[data-theme]").data("theme");
+    let menu = packageWidget.find("[data-menu]").data("menu");
+    let packageId = packageWidget.find("[data-id]").data("id");
+
+    localStorage.setItem("event_theme", eventTheme);
+    localStorage.setItem("package_id", packageId);
+    localStorage.setItem("menu", menu);
+    window.location.href = "/eventDetailsManual";
   });
 
   function enableDarkMode() {
@@ -128,7 +139,6 @@ $(document).ready(() => {
       $(".sidebar .details-content p").text("Guest");
     },
   });
-
 
   $(document).on("click", function (event) {
     if (
@@ -258,7 +268,7 @@ $(document).ready(() => {
     lengthMenu: [10, 25, 50, 100],
     columnDefs: [{ orderable: false, targets: 6 }],
   });
-  
+
   function fetchBlockedDates() {
     $.ajax({
       url: "/fetch_blocked_dates",

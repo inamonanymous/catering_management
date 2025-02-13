@@ -8,50 +8,91 @@
           <div class="field-container">
             <label>Name of Event:</label>
             <div class="input-container">
-              <input type="text" name="event_name" placeholder="Enter Event Name" required />
+              <input
+                type="text"
+                name="event_name"
+                placeholder="Enter Event Name"
+                required
+              />
             </div>
           </div>
           <div class="field-container">
             <label>No. of Guest:</label>
             <div class="input-container">
-              <input type="text" name="event_guest" placeholder="Enter No. of Guest" required />
+              <input
+                type="text"
+                name="event_guest"
+                placeholder="Enter No. of Guest"
+                required
+              />
             </div>
           </div>
           <div class="field-container">
             <label>Event Theme:</label>
             <div class="input-container">
-              <input type="text" name="theme" placeholder="Enter Event Theme" required />
+              <input
+                type="text"
+                name="theme"
+                placeholder="Enter Event Theme"
+                required
+              />
             </div>
           </div>
           <div class="field-container">
             <label>Color Motif:</label>
             <div class="input-container">
-              <input type="text" name="color" placeholder="Enter Color Motif" required />
+              <input
+                type="text"
+                name="color"
+                placeholder="Enter Color Motif"
+                required
+              />
             </div>
           </div>
         </div>
         <div class="field-container">
           <label>Location of Event:</label>
           <div class="input-container">
-            <input type="text" name="event_location" placeholder="Enter Event Location" required />
+            <input
+              type="text"
+              name="event_location"
+              placeholder="Enter Event Location"
+              required
+            />
+          </div>
+        </div>
+        <div class="field-container">
+          <label>Package ID</label>
+          <div class="input-container">
+            <input type="number" name="package_id" hidden/>
           </div>
         </div>
         <div class="double-field">
           <div class="field-container">
             <label>Date & Time of Event: </label>
             <div class="input-container">
-              <input type="date" name="event_date" placeholder="Enter Event Name" required />
+              <input
+                type="date"
+                name="event_date"
+                placeholder="Enter Event Name"
+                required
+              />
             </div>
           </div>
           <div class="field-container">
             <label>Time of food delivered:</label>
             <div class="input-container">
-              <input type="time" name="food_delivered" placeholder="Enter Time of Food Delivered" required />
+              <input
+                type="time"
+                name="food_delivered"
+                placeholder="Enter Time of Food Delivered"
+                required
+              />
             </div>
           </div>
         </div>
         <div class="field-container checkbox">
-          <label>Menu:</label>
+          <label class="menu_stock">Menu:</label>
           {% for menu in menus %}
           <div class="input-container">
             <input
@@ -76,4 +117,74 @@
     </div>
   </div>
 </div>
+
+<script>
+  $(document).ready(function () {
+    let isPageReload = false;
+
+    $(window).on("beforeunload", function () {
+      isPageReload = true;
+    });
+
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "hidden" && !isPageReload) {
+        localStorage.removeItem("menu");
+        localStorage.removeItem("event_theme");
+        localStorage.removeItem("package_id");
+      }
+    });
+
+    $("form").on("submit", function () {
+      localStorage.removeItem("menu");
+      localStorage.removeItem("event_theme");
+      localStorage.removeItem("package_id");
+    });
+
+    let theme = localStorage.getItem("event_theme"),
+      packageId = localStorage.getItem("package_id"),
+      maxMenuQuantity = localStorage.getItem("menu");
+
+    if (theme) {
+      if (theme) $("input[name='theme']").val(theme);
+      if (packageId) $("input[name='package_id']").val(packageId);
+
+      if (maxMenuQuantity) {
+        maxMenuQuantity = parseInt(maxMenuQuantity, 10);
+
+        $(".menu_stock").append(
+          ` <span id="remainingStock">${maxMenuQuantity}</span> remaining`
+        );
+
+        function updateTotal() {
+          let total = 0;
+          $("input[type='number'][name^='menu_quantities']").each(function () {
+            let value = parseInt($(this).val(), 10) || 0;
+            total += value;
+          });
+
+          return total;
+        }
+
+        $("input[type='number'][name^='menu_quantities']").on(
+          "input",
+          function () {
+            let totalSelected = updateTotal();
+            let remaining = maxMenuQuantity - totalSelected;
+
+            if (totalSelected > maxMenuQuantity) {
+              let excess = totalSelected - maxMenuQuantity;
+              $(this).val(Math.max(0, $(this).val() - excess));
+              showErrorMessage(
+                `Total quantity cannot exceed ${maxMenuQuantity}!`
+              );
+              remaining = 0;
+            }
+
+            $("#remainingStock").text(remaining);
+          }
+        );
+      }
+    }
+  });
+</script>
 {% endblock %}
