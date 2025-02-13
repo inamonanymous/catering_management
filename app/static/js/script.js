@@ -13,6 +13,34 @@ $(document).ready(() => {
     headers: {
       "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"),
     },
+    
+  });
+  
+
+  $(document).on("click", ".removePackage", function () {
+    let packageElement = $(this).closest(".package-widget"),
+      packageId = packageElement.data("id");
+
+    showConfirmationModal("Do you want to remove this package?").then(
+      (result) => {
+        if (result.isConfirmed) {
+          $.ajax({
+            url: "/delete_package",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ package_id: packageId }),
+            success(response) {
+              showSuccessMessage(response.message);
+              packageElement.remove();
+            },
+            error(response) {
+              console.log(response);
+              showErrorMessage();
+            },
+          });
+        }
+      }
+    );
   });
 
   function enableDarkMode() {
@@ -64,18 +92,30 @@ $(document).ready(() => {
               <i class="bi bi-list-check"></i>
               <span class="links_name">Manage bookings</span>
             </a>
-          </div>
-          <div class="navigation-item">
-            <a href="{{ url_for('main.settings') }}" class="menu-link">
-              <i class="bi bi-gear-fill"></i>
-              <span class="links_name">Settings</span>
-            </a>
-          </div>
+            </div>
+            <div class="navigation-item">
+              <a href="/manage_menus" class="menu-link">
+                <i class="bi bi-menu-app-fill"></i>
+                <span class="links_name">Manage menus</span>
+              </a>
+            </div>
+            <div class="navigation-item">
+              <a href="/manage_users" class="menu-link">
+                <i class="bi bi-people"></i>
+                <span class="links_name">Manage users</span>
+              </a>
+            </div>
         `);
       }
 
       // Add the Logout button after all the items to ensure it's last
       $(".sidebar .nav_list").append(`
+        <div class="navigation-item">
+          <a href="{{ url_for('main.settings') }}" class="menu-link">
+            <i class="bi bi-gear-fill"></i>
+            <span class="links_name">Settings</span>
+          </a>
+        </div>
         <div class="navigation-item">
           <a href="/logout" class="menu-link">
             <i class="bi bi-door-open"></i>
@@ -89,31 +129,6 @@ $(document).ready(() => {
     },
   });
 
-  $(document).on("click", ".removePackage", function () {
-    let packageElement = $(this).closest(".package-widget"),
-      packageId = packageElement.data("id");
-
-    showConfirmationModal("Do you want to remove this package?").then(
-      (result) => {
-        if (result.isConfirmed) {
-          $.ajax({
-            url: "/delete_package",
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({ package_id: packageId }),
-            success(response) {
-              showSuccessMessage(response.message);
-              packageElement.remove();
-            },
-            error(response) {
-              console.log(response);
-              showErrorMessage();
-            },
-          });
-        }
-      }
-    );
-  });
 
   $(document).on("click", function (event) {
     if (
@@ -124,13 +139,13 @@ $(document).ready(() => {
     }
   });
 
-  $("#bookingTable").DataTable({
+  $(".data-tables").DataTable({
     paging: true,
     searching: true,
     ordering: false,
     info: true,
     lengthMenu: [10, 25, 50, 100],
-    columnDefs: [{ orderable: false, targets: 6 }],
+    columnDefs: [{ orderable: false, targets: 4 }],
   });
 
   let calendarEl = $("#calendar-view")[0];
@@ -235,6 +250,15 @@ $(document).ready(() => {
 
   calendar.render();
 
+  $("#userBookingTable").DataTable({
+    paging: true,
+    searching: true,
+    ordering: false,
+    info: true,
+    lengthMenu: [10, 25, 50, 100],
+    columnDefs: [{ orderable: false, targets: 6 }],
+  });
+  
   function fetchBlockedDates() {
     $.ajax({
       url: "/fetch_blocked_dates",
@@ -266,6 +290,7 @@ function deleteBooking(bookingId) {
           .then((data) => {
             if (data.success) {
               showSuccessMessage("The booking has been deleted.");
+              window.location.reload();
             } else {
               showErrorMessage();
             }

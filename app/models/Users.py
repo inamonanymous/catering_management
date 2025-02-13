@@ -1,5 +1,7 @@
 from app.models import db
 from werkzeug.security import generate_password_hash, check_password_hash
+from app.models.Bookings import Bookings
+from app.functions import remove_booking_parent_rows
 
 class Users(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
@@ -16,6 +18,39 @@ class Users(db.Model):
     role = db.Column(db.Enum('admin', 'customer'), nullable=False)
 
     bookings = db.relationship('Bookings', backref='user', lazy=True)
+
+    @classmethod
+    def delete_user(cls, username):
+        try:
+            target_user = cls.query.filter_by(username=username).first()
+
+            if not target_user:
+                print("User not found")
+                return False  # Return False instead of None if the user is not found
+            if target_user.role=='admin':
+                print("Cannot delete admin")
+                return False  # Return False instead of None if the user is not found
+
+            # Get all bookings by the user
+            all_bookings_by_user = Bookings.get_all_bookings_by_user_id(target_user.user_id)
+
+            # Delete related bookings first
+            if all_bookings_by_user:
+                for booking in all_bookings_by_user:
+                    if Bookings.delete_booking_with_choices(booking.booking_id):
+                        print('Deleted booking:', booking.booking_id)
+                        remove_booking_parent_rows(booking.event_id, booking.package_id, booking.payment_id)
+
+            # Delete the user
+            db.session.delete(target_user)
+            db.session.commit()
+            return True
+
+        except Exception as e: 
+            print(f"Cannot delete user: {e}")
+            return False  # Return False in case of failure
+
+        
 
     @classmethod
     def get_user_by_username(cls, username):

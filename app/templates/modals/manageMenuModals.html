@@ -1,0 +1,96 @@
+<!-- Edit Menu Modal -->
+<div class="modal fade" id="editMenuModal" tabindex="-1" aria-labelledby="editMenuModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="editMenuModalLabel">Edit Menu</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editMenuForm">
+                    <input type="hidden" id="edit_menu_id" name="menu_id" />
+
+                    <div class="field-container">
+                        <label for="edit_menu_name">Menu Name</label>
+                        <input type="text" id="edit_menu_name" name="menu_name" required />
+                    </div>
+                    <div class="field-container">
+                        <label for="edit_menu_description">Menu Description</label>
+                        <input type="text" id="edit_menu_description" name="menu_description" required />
+                    </div>
+                    <div class="field-container">
+                        <label for="edit_menu_price">Menu Price</label>
+                        <input type="number" id="edit_menu_price" name="menu_price" required />
+                    </div>
+
+                    <!-- Menu Items Section -->
+                    <div id="editMenuItemsContainer">
+                        <h4>Menu Items</h4>
+                        <button type="button" onclick="addEditMenuItem()">+ Add Item</button>
+                        <div id="existingMenuItems"></div>
+                    </div>
+
+                    <div class="button-con">
+                        <button type="button" onclick="submitEditMenu()" class="alt-1">Save changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Menu Items Modal -->
+<div class="modal fade" id="menuItemsModal" tabindex="-1" aria-labelledby="menuItemsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="menuItemsModalLabel">Menu Items</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul id="menuItemsList" class="list-group">
+                    <!-- Menu items will be dynamically inserted here -->
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Menu Modal -->
+<div class="modal fade" id="addMenuModal" tabindex="-1" aria-labelledby="addMenuModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="addMenuModalLabel">Add Menu Form</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="packageForm">
+                    <div class="field-container">
+                        <label for="menu_name">Menu Name</label>
+                        <input type="text" name="menu_name" placeholder="Enter Menu Name" required />
+                    </div>
+                    <div class="field-container">
+                        <label for="menu_description">Menu Description</label>
+                        <input type="text" name="menu_description" placeholder="Enter Menu Description" required />
+                    </div>
+                    <div class="field-container">
+                        <label for="menu_price">Menu Price</label>
+                        <input type="number" name="menu_price" placeholder="Enter Menu Price" required />
+                    </div>
+
+                    <!-- Menu Items Section -->
+                    <div id="menuItemsContainer">
+                        <h4>Menu Items</h4>
+                        <button type="button" onclick="addMenuItem()">+ Add Item</button>
+                    </div>
+
+                    <div class="button-con">
+                        <button type="button" onclick="submitMenu()" class="alt-1">Save changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+

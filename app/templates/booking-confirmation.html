@@ -61,7 +61,7 @@
         <p class="error-message">No event details found.</p>
       {% endif %}
 
-      {% if current_user_active_booking and not pending_payments %}
+      {% if not booking.payments %}
         <section class="update-menu-con">
           <h3>Add More Menus</h3>
           <form action="{{ url_for('main.add_menu_choice', event_id=event.event_id) }}" method="POST">

@@ -692,7 +692,7 @@ html[data-theme="dark"] #footer {
     font-size: 12px;
   }
 }
-
+/* manage-bookings */
 #manage-bookings h2 {
   margin-bottom: 30px;
 }
@@ -706,4 +706,32 @@ html[data-theme="dark"] #footer {
   gap: 20px;
   display: flex;
   justify-content: flex-end;
+}
+
+/* manage-users */
+#manage-users h2 {
+  margin-bottom: 30px;
+}
+#manage-users .table-con {
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0px 0px 20px 1px rgba(0, 0, 0, 0.1);
+}
+/* manage-menus */
+#manage-menus h2 {
+  margin-bottom: 30px;
+}
+
+#manage-menus .table-con {
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0px 0px 20px 1px rgba(0, 0, 0, 0.1);
+}
+
+#manage-menus .header-content {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 30px;
 }
