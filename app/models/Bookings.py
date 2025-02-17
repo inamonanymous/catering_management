@@ -150,7 +150,7 @@ class Bookings(db.Model):
         db.session.commit()
 
     @classmethod
-    def insert(cls, user_id, total_price, status, event_id=None, package_id=None):
+    def insert(cls, user_id, total_price, status, event_id, package_id=None):
         new_booking = cls(
             user_id=user_id,
             total_price=total_price,
