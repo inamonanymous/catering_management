@@ -518,6 +518,7 @@ def eventDetailsManual():
             user_id = current_user.user_id
 
             # Calculate total price
+            # Calculate total price
             total_price = sum(
                 Menu.query.get(menu_id).price * int(args.get(f'menu_quantities[{menu_id}]', 1))
                 for menu_id in args.getlist('menus')
@@ -526,27 +527,30 @@ def eventDetailsManual():
             
             date_obj = datetime.strptime(args['event_date'], '%Y-%m-%d').date()
             if BlockedDates.get_blocked_date_by_date(date_obj):
-                flash(f"cannot insert booking in blocked dates")
+                print(f"cannot insert booking in blocked dates")
                 return redirect(url_for('main.eventDetailsManual'))
 
             # Create event
             new_event = EventDetails.insert(
                 event_name=args['event_name'],
                 number_of_guests=args['event_guest'],
-                event_date_obj=datetime.strptime(args['event_date'], '%Y-%m-%d').date(),
+                event_date_obj=date_obj,
                 food_time=args['food_delivered'],
                 event_location=args['event_location'],
                 event_theme=args['theme'],
                 event_color=args['color']
             )
 
+            if not new_event or not new_event.event_id:
+                print("Failed to create EventDetails")
+                return redirect(url_for('main.eventDetailsManual'))
+
             # Create booking
             new_booking = Bookings.insert(
                 user_id=user_id,
                 total_price=total_price, 
                 status='to-pay',
-                event_id=new_event.event_id,
-                package_id=args['package_id']
+                event_id=new_event.event_id
             )
 
             # Add menu choices
@@ -557,7 +561,7 @@ def eventDetailsManual():
                 )
 
             db.session.commit()
-            flash('Booking created successfully!')
+            print('Booking created successfully!')
             return redirect(url_for('main.booking_confirmation', 
                                     event_id=new_event.event_id,
                                     booking_id=new_booking.booking_id)
@@ -565,7 +569,7 @@ def eventDetailsManual():
 
         except Exception as e:
             db.session.rollback()
-            flash(f"Error: {str(e)}")
+            print(f"Error: {str(e)}")
             return redirect(url_for('main.eventDetailsManual'))
 
     return render_template('event-details-manual.html', menus=Menu.query.all(), email=session['user_username'])
