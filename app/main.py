@@ -518,6 +518,7 @@ def eventDetailsManual():
             user_id = current_user.user_id
 
             # Calculate total price
+            # Calculate total price
             total_price = sum(
                 Menu.query.get(menu_id).price * int(args.get(f'menu_quantities[{menu_id}]', 1))
                 for menu_id in args.getlist('menus')
